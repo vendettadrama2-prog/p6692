@@ -206,44 +206,46 @@ fun ProfileScreen(
             }
         }
 
-        // Admin Access Quick Switcher
-        item {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = SecondaryBg,
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.4f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+        // Admin Access Quick Switcher - strictly hidden for standard users, shown only when user.role == 'ADMIN'
+        if (user?.role?.uppercase() == "ADMIN") {
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = SecondaryBg,
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.4f))
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(AccentCyan.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.AdminPanelSettings, contentDescription = null, tint = AccentCyan)
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(AccentCyan.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(imageVector = Icons.Default.AdminPanelSettings, contentDescription = null, tint = AccentCyan)
+                            }
+                            Column {
+                                Text("Admin Portal", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Analytics, games catalog, user controls", color = TextSecondary, fontSize = 11.sp)
+                            }
                         }
-                        Column {
-                            Text("Admin Portal", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Analytics, games catalog, user controls", color = TextSecondary, fontSize = 11.sp)
-                        }
-                    }
 
-                    Button(
-                        onClick = onOpenAdminDashboard,
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan)
-                    ) {
-                        Text("OPEN", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Button(
+                            onClick = onOpenAdminDashboard,
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentCyan)
+                        ) {
+                            Text("OPEN", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        }
                     }
                 }
             }

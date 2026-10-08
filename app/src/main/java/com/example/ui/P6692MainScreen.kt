@@ -169,25 +169,30 @@ fun P6692MainApp(
         return
     }
 
-    // 2. Admin Dashboard Screen
+    // 2. Admin Dashboard Screen (Strict Role-Based Access Control)
     if (showAdminDashboard) {
-        AdminDashboardScreen(
-            users = allUsers,
-            games = allGames,
-            deposits = allDeposits,
-            withdrawals = allWithdrawals,
-            transactions = allTransactions,
-            jazzCashConfig = jazzCashConfig,
-            auditLogs = auditLogs,
-            onToggleGameEnabled = { id, en -> viewModel.adminToggleGameEnabled(id, en) },
-            onToggleGameFeatured = { id, feat -> viewModel.adminToggleGameFeatured(id, feat) },
-            onGrantCredits = { id, amt -> viewModel.adminGrantCredits(id, amt) },
-            onToggleBanUser = { id, ban -> viewModel.adminToggleBanUser(id, ban) },
-            onVerifyDeposit = { id, app, note -> viewModel.adminVerifyDeposit(id, app, note) },
-            onProcessWithdrawal = { id, app, comp, note -> viewModel.adminProcessWithdrawal(id, app, comp, note) },
-            onSaveJazzCashConfig = { cfg -> viewModel.saveJazzCashConfig(cfg) },
-            onBack = { viewModel.showAdminDashboard.value = false }
-        )
+        if (user?.role?.uppercase() == "ADMIN") {
+            AdminDashboardScreen(
+                users = allUsers,
+                games = allGames,
+                deposits = allDeposits,
+                withdrawals = allWithdrawals,
+                transactions = allTransactions,
+                jazzCashConfig = jazzCashConfig,
+                auditLogs = auditLogs,
+                onToggleGameEnabled = { id, en -> viewModel.adminToggleGameEnabled(id, en) },
+                onToggleGameFeatured = { id, feat -> viewModel.adminToggleGameFeatured(id, feat) },
+                onGrantCredits = { id, amt -> viewModel.adminGrantCredits(id, amt) },
+                onToggleBanUser = { id, ban -> viewModel.adminToggleBanUser(id, ban) },
+                onVerifyDeposit = { id, app, note -> viewModel.adminVerifyDeposit(id, app, note) },
+                onProcessWithdrawal = { id, app, comp, note -> viewModel.adminProcessWithdrawal(id, app, comp, note) },
+                onSaveJazzCashConfig = { cfg -> viewModel.saveJazzCashConfig(cfg) },
+                onBack = { viewModel.showAdminDashboard.value = false }
+            )
+        } else {
+            // Non-admin attempting direct navigation - auto-close and deny access
+            viewModel.showAdminDashboard.value = false
+        }
         return
     }
 
