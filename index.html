@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P6692 - Premium Dark Gaming & Entertainment Platform</title>
+  <meta name="description" content="Download P6692 APK - Premium Dark Gaming with real PKR balance, JazzCash merchant deposits, Jelly, Aviator, Mines, Plinko, Cyber Crash & Neon Slots.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07050D;
+      --bg-secondary: #140D24;
+      --bg-card: #1D1233;
+      --primary: #8B5CF6;
+      --bright: #B56CFF;
+      --accent: #22D3EE;
+      --text: #F5F1FF;
+      --text-muted: #A39BB5;
+      --success: #10B981;
+      --gold: #F59E0B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Ambient background glow */
+    body::before {
+      content: "";
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, rgba(34, 211, 238, 0.1) 40%, transparent 70%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      background: rgba(20, 13, 36, 0.7);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-logo-badge {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--bright), var(--accent));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1.1rem;
+      color: #07050D;
+      box-shadow: 0 0 16px rgba(181, 108, 255, 0.5);
+    }
+
+    .brand-name {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, #FFFFFF, var(--bright));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--success);
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    main {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1.25rem;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(181, 108, 255, 0.4);
+      border-radius: 999px;
+      color: var(--bright);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: 1px;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #FFFFFF 20%, var(--bright) 70%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: clamp(1.1rem, 2vw, 1.35rem);
+      color: var(--text-muted);
+      max-width: 750px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+    }
+
+    .cta-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.95rem 2rem;
+      border-radius: 12px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 1px;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--bright), var(--primary));
+      color: #FFFFFF;
+      box-shadow: 0 0 25px rgba(181, 108, 255, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 35px rgba(181, 108, 255, 0.75);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .download-meta {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .download-meta span {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Grid of games */
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .section-title::before,
+    .section-title::after {
+      content: "";
+      height: 2px;
+      width: 60px;
+      background: linear-gradient(90deg, transparent, var(--bright));
+    }
+    .section-title::after {
+      background: linear-gradient(90deg, var(--bright), transparent);
+    }
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+
+    .game-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--bright);
+      box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+    }
+
+    .game-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--bright), var(--accent));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .game-card:hover::before {
+      opacity: 1;
+    }
+
+    .game-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+
+    .game-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #FFFFFF;
+    }
+
+    .game-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 1.25rem;
+    }
+
+    .game-tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: rgba(34, 211, 238, 0.1);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Features section */
+    .features-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+
+    .feature-card {
+      background: var(--bg-secondary);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 14px;
+      padding: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .feature-icon-box {
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .feature-content h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      margin-bottom: 0.35rem;
+      color: #FFFFFF;
+    }
+
+    .feature-content p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    footer {
+      position: relative;
+      z-index: 10;
+      border-top: 1px solid rgba(139, 92, 246, 0.2);
+      background: #05030A;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="#" class="brand">
+      <div class="brand-logo-badge">P</div>
+      <span class="brand-name">P6692</span>
+    </a>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      <span>Platform Live</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="badge-pill">
+        ⚡ Real PKR Gaming & Wallet Platform
+      </div>
+      <h1>P6692 GAMING APPLICATION</h1>
+      <p class="subtitle">
+        Experience high-intensity gaming with real PKR currency. Powered by secure backend wallet calculations, official JazzCash merchant checkout, and instant verification.
+      </p>
+
+      <div class="cta-container">
+        <a href="./P6692.apk" class="btn btn-primary" download="P6692.apk">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          DOWNLOAD APK (ANDROID)
+        </a>
+        <a href="./app-debug.apk" class="btn btn-secondary" download="app-debug.apk">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="8 17 12 21 16 17"></polyline>
+            <line x1="12" y1="12" x2="12" y2="21"></line>
+            <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path>
+          </svg>
+          MIRROR DOWNLOAD
+        </a>
+      </div>
+
+      <div class="download-meta">
+        Package: <span>com.aistudio.p6692</span> &bull; Version: <span>1.0.0</span> &bull; Size: <span>~27 MB</span>
+      </div>
+    </div>
+
+    <!-- Active Games -->
+    <h2 class="section-title">ACTIVE GAMES</h2>
+    <div class="games-grid">
+      <div class="game-card">
+        <div class="game-icon">🍮</div>
+        <div class="game-title">Jelly</div>
+        <p class="game-desc">Dynamic bouncy multipliers with color-matching combos and real PKR bets.</p>
+        <span class="game-tag">New Release</span>
+      </div>
+
+      <div class="game-card">
+        <div class="game-icon">🚀</div>
+        <div class="game-title">Aviator</div>
+        <p class="game-desc">Rising crash multiplier with live cash out control and round history tracking.</p>
+        <span class="game-tag">High Stakes</span>
+      </div>
+
+      <div class="game-card">
+        <div class="game-icon">💣</div>
+        <div class="game-title">Mines</div>
+        <p class="game-desc">Grid-based minefield. Reveal safe crystal tiles to escalate potential payout or cash out.</p>
+        <span class="game-tag">Strategy</span>
+      </div>
+
+      <div class="game-card">
+        <div class="game-icon">🎯</div>
+        <div class="game-title">Plinko</div>
+        <p class="game-desc">Dynamic ball drop through multi-pin pyramids into variable multiplier buckets.</p>
+        <span class="game-tag">Arcade</span>
+      </div>
+
+      <div class="game-card">
+        <div class="game-icon">📈</div>
+        <div class="game-title">Cyber Crash</div>
+        <p class="game-desc">Futuristic neon curve multiplier with real-time curve animation and instant settlement.</p>
+        <span class="game-tag">Popular</span>
+      </div>
+
+      <div class="game-card">
+        <div class="game-icon">🎰</div>
+        <div class="game-title">Neon Slots</div>
+        <p class="game-desc">Cyberpunk 3-reel slot machine featuring scatter bonuses and jackpot rounds.</p>
+        <span class="game-tag">Classic</span>
+      </div>
+    </div>
+
+    <!-- Key Infrastructure Features -->
+    <h2 class="section-title">ARCHITECTURE & SAFETY</h2>
+    <div class="features-row">
+      <div class="feature-card">
+        <div class="feature-icon-box">💳</div>
+        <div class="feature-content">
+          <h3>Real JazzCash Merchant</h3>
+          <p>Official merchant checkout flow (Ahmed Shop) with HMAC-SHA256 signature verification and strict idempotency.</p>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box">🛡️</div>
+        <div class="feature-content">
+          <h3>Server-Side Wallet</h3>
+          <p>Zero client-side trust. All bet deductions, win payouts, and PKR ledger transactions are validated server-side.</p>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-box">📱</div>
+        <div class="feature-content">
+          <h3>Android Native App</h3>
+          <p>Modern Jetpack Compose architecture with edge-to-edge Material 3 styling and smooth 60fps animations.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 P6692 Gaming Platform. All Rights Reserved. Real PKR currency &bull; JazzCash Verified.</p>
+  </footer>
+
+</body>
+</html>
