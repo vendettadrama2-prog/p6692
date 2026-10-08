@@ -1,0 +1,6 @@
+{
+  "name": "P6692",
+  "description": "Premium Dark Gaming & Entertainment Platform featuring interactive games, demo wallet, missions, VIP rewards, Gemini AI game assistant, and AI avatar generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

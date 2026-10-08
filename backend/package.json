@@ -1,0 +1,16 @@
+{
+  "name": "p6692-backend",
+  "version": "1.0.0",
+  "description": "P6692 Payment & Gaming Backend - JazzCash & Easypaisa Integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0"
+  }
+}
