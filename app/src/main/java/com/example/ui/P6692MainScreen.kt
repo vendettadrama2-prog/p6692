@@ -153,6 +153,61 @@ fun P6692MainApp(
                     onBack = { viewModel.exitGame() }
                 )
             }
+            "bubble_shooter", "bubble" -> {
+                BubbleShooterGame(
+                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    soundEnabled = soundEnabled,
+                    onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
+                    onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
+                    onRoundLost = { bet -> viewModel.recordPkrGameLoss(currentGame.id, currentGame.title, bet) },
+                    onOpenDeposit = { viewModel.showDepositModal.value = true },
+                    onBack = { viewModel.exitGame() }
+                )
+            }
+            "candy_match", "candy" -> {
+                CandyMatchGame(
+                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    soundEnabled = soundEnabled,
+                    onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
+                    onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
+                    onRoundLost = { bet -> viewModel.recordPkrGameLoss(currentGame.id, currentGame.title, bet) },
+                    onOpenDeposit = { viewModel.showDepositModal.value = true },
+                    onBack = { viewModel.exitGame() }
+                )
+            }
+            "fruit_merge", "fruit" -> {
+                FruitMergeGame(
+                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    soundEnabled = soundEnabled,
+                    onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
+                    onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
+                    onRoundLost = { bet -> viewModel.recordPkrGameLoss(currentGame.id, currentGame.title, bet) },
+                    onOpenDeposit = { viewModel.showDepositModal.value = true },
+                    onBack = { viewModel.exitGame() }
+                )
+            }
+            "money_coming", "money_coming_game", "spinning_wheel" -> {
+                MoneyComingGame(
+                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    soundEnabled = soundEnabled,
+                    onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
+                    onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
+                    onRoundLost = { bet -> viewModel.recordPkrGameLoss(currentGame.id, currentGame.title, bet) },
+                    onOpenDeposit = { viewModel.showDepositModal.value = true },
+                    onBack = { viewModel.exitGame() }
+                )
+            }
+            "fortune_gems", "fortune_gems_2", "fortune_gems_game" -> {
+                FortuneGemsGame(
+                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    soundEnabled = soundEnabled,
+                    onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
+                    onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
+                    onRoundLost = { bet -> viewModel.recordPkrGameLoss(currentGame.id, currentGame.title, bet) },
+                    onOpenDeposit = { viewModel.showDepositModal.value = true },
+                    onBack = { viewModel.exitGame() }
+                )
+            }
             else -> {
                 // Default fallback to Cyber Crash for other arcade games
                 CyberCrashGame(

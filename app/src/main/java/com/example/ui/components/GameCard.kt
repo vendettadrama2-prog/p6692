@@ -99,12 +99,25 @@ fun GameCard(
                 }
 
                 // Big Game Icon Silhouette
-                val emojiIcon = when (game.category) {
-                    "Crash" -> "🚀"
-                    "Slots" -> "🎰"
-                    "Mines" -> "💣"
-                    "Cards" -> "🃏"
-                    else -> "🎮"
+                val emojiIcon = when (game.id) {
+                    "money_coming" -> "🎡"
+                    "fortune_gems" -> "💎"
+                    "bubble_shooter" -> "🎯"
+                    "candy_match" -> "🍬"
+                    "fruit_merge" -> "🍉"
+                    "aviator" -> "✈️"
+                    "mines" -> "💎"
+                    "plinko" -> "🔴"
+                    "jelly" -> "🍓"
+                    else -> when (game.category) {
+                        "Crash" -> "🚀"
+                        "Slots" -> "🎰"
+                        "Mines" -> "💣"
+                        "Cards" -> "🃏"
+                        "Arcade" -> "🕹️"
+                        "Puzzle" -> "🧩"
+                        else -> "🎮"
+                    }
                 }
                 Text(
                     text = emojiIcon,

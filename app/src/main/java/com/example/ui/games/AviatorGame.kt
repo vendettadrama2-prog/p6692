@@ -38,6 +38,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
+import androidx.compose.ui.graphics.drawscope.rotate
+import kotlin.math.atan2
+
 /**
  * P6692 Aviator Game
  * Features:
@@ -72,6 +75,15 @@ fun AviatorGame(
     var cashedOutMultiplier by remember { mutableDoubleStateOf(0.0) }
     var cashedOutAmount by remember { mutableDoubleStateOf(0.0) }
 
+    // Auto Cash Out State
+    var autoCashOutEnabled by remember { mutableStateOf(false) }
+    var autoCashOutTarget by remember { mutableDoubleStateOf(2.00) }
+    var autoCashOutInputText by remember { mutableStateOf("2.00") }
+
+    // Countdown before launch
+    var countdownSeconds by remember { mutableIntStateOf(0) }
+    var showRulesDialog by remember { mutableStateOf(false) }
+
     var isPlacingBet by remember { mutableStateOf(false) }
     var betErrorMessage by remember { mutableStateOf("") }
     val roundHistory = remember { mutableStateListOf(1.94, 1.22, 4.35, 1.08, 12.80, 2.11, 1.45, 6.70) }
@@ -105,6 +117,19 @@ fun AviatorGame(
                 val mult = 1.0 + (elapsed * 0.38) + (elapsed * elapsed * 0.08)
                 currentMultiplier = (mult * 100).toInt() / 100.0
 
+                // Auto Cash Out Trigger
+                if (autoCashOutEnabled && currentMultiplier >= autoCashOutTarget && gameState == "FLYING") {
+                    val winMult = currentMultiplier
+                    val winPkr = (activeBetAmount * winMult * 100).toInt() / 100.0
+                    cashedOutMultiplier = winMult
+                    cashedOutAmount = winPkr
+                    gameState = "CASHED_OUT"
+                    roundHistory.add(0, (winMult * 100).toInt() / 100.0)
+                    if (roundHistory.size > 12) roundHistory.removeLast()
+                    onCashoutWin(winPkr, winMult, activeBetAmount)
+                    break
+                }
+
                 if (currentMultiplier >= crashPoint) {
                     gameState = "FLEW_AWAY"
                     val roundedCrash = (crashPoint * 100).toInt() / 100.0
@@ -118,7 +143,7 @@ fun AviatorGame(
         }
     }
 
-    // Pulse animation for multiplier
+    // Pulse animation for multiplier and exhaust flame
     val infiniteTransition = rememberInfiniteTransition(label = "aviator_pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -128,6 +153,15 @@ fun AviatorGame(
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse_scale"
+    )
+    val flameFlicker by infiniteTransition.animateFloat(
+        initialValue = 0.75f,
+        targetValue = 1.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(120, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "flame_flicker"
     )
 
     Column(
@@ -252,7 +286,8 @@ fun AviatorGame(
                 )
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    contentPadding = PaddingValues(end = 8.dp)
+                    contentPadding = PaddingValues(end = 8.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
                     items(roundHistory) { mult ->
                         val pillColor = when {
@@ -275,6 +310,13 @@ fun AviatorGame(
                             )
                         }
                     }
+                }
+
+                IconButton(
+                    onClick = { showRulesDialog = true },
+                    modifier = Modifier.size(26.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Info, contentDescription = "Rules", tint = AccentCyan, modifier = Modifier.size(18.dp))
                 }
             }
         }
@@ -362,18 +404,139 @@ fun AviatorGame(
                         style = Stroke(width = 5f)
                     )
 
-                    // Draw Plane Indicator Icon
+                    // Draw Plane Indicator & Realistic Aviator Red Airplane/Rocket
                     if (gameState != "FLEW_AWAY") {
+                        // Calculate tangent angle of curve for realistic flight angle
+                        val prevProg = (progress - 0.02f).coerceAtLeast(0f)
+                        val prevX = curveStartX + (w - 100f) * prevProg
+                        val prevY = curveStartY - (h - 100f) * (prevProg * prevProg)
+                        val dx = currentX - prevX
+                        val dy = currentY - prevY
+                        val tangentAngle = (Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()).coerceIn(-65f, 10f)
+
+                        // Glowing contrail halo behind airplane
                         drawCircle(
-                            color = CoralRed,
-                            radius = 10f,
+                            brush = Brush.radialGradient(
+                                colors = listOf(CoralRed.copy(alpha = 0.5f), Color.Transparent),
+                                center = Offset(currentX, currentY),
+                                radius = 45f
+                            ),
+                            radius = 45f,
                             center = Offset(currentX, currentY)
                         )
-                        drawCircle(
-                            color = Color.White,
-                            radius = 4f,
-                            center = Offset(currentX, currentY)
-                        )
+
+                        // Draw flying red rocket / airplane rotated along flight trajectory
+                        rotate(degrees = tangentAngle, pivot = Offset(currentX, currentY)) {
+                            // 1. Dynamic Exhaust Flame with animated flicker
+                            val flameLen = 32f * flameFlicker
+                            val flameWidth = 14f * flameFlicker
+                            val flamePath = Path().apply {
+                                moveTo(currentX - 16f, currentY - 5f)
+                                quadraticTo(currentX - 16f - flameLen * 0.6f, currentY, currentX - 16f - flameLen, currentY)
+                                quadraticTo(currentX - 16f - flameLen * 0.6f, currentY + 3f, currentX - 16f, currentY + 5f)
+                                close()
+                            }
+                            drawPath(
+                                path = flamePath,
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(GoldYellow, CoralRed, Color.Transparent),
+                                    startX = currentX - 16f,
+                                    endX = currentX - 16f - flameLen
+                                )
+                            )
+
+                            // Inner intense blue-white jet core
+                            val innerFlame = Path().apply {
+                                moveTo(currentX - 16f, currentY - 2.5f)
+                                lineTo(currentX - 16f - (flameLen * 0.5f), currentY)
+                                lineTo(currentX - 16f, currentY + 2.5f)
+                                close()
+                            }
+                            drawPath(
+                                path = innerFlame,
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(Color.White, AccentCyan, Color.Transparent),
+                                    startX = currentX - 16f,
+                                    endX = currentX - 16f - (flameLen * 0.5f)
+                                )
+                            )
+
+                            // 2. Main Wings (Back swept aerodynamic wings)
+                            val wingsPath = Path().apply {
+                                moveTo(currentX - 2f, currentY - 22f)
+                                lineTo(currentX + 8f, currentY - 4f)
+                                lineTo(currentX - 14f, currentY - 4f)
+                                close()
+                            }
+                            drawPath(path = wingsPath, color = Color(0xFFB91C1C)) // Deep crimson wing top
+
+                            val lowerWingPath = Path().apply {
+                                moveTo(currentX - 2f, currentY + 22f)
+                                lineTo(currentX + 8f, currentY + 4f)
+                                lineTo(currentX - 14f, currentY + 4f)
+                                close()
+                            }
+                            drawPath(path = lowerWingPath, color = Color(0xFF991B1B)) // Shadowed lower wing
+
+                            // 3. Tail Fin (Stabilizer)
+                            val tailPath = Path().apply {
+                                moveTo(currentX - 16f, currentY)
+                                lineTo(currentX - 24f, currentY - 14f)
+                                lineTo(currentX - 18f, currentY)
+                                close()
+                            }
+                            drawPath(path = tailPath, color = CoralRed)
+
+                            // 4. Main Fuselage / Body (Sleek aerodynamic red rocket/plane fuselage)
+                            val fuselagePath = Path().apply {
+                                moveTo(currentX + 26f, currentY) // Sharp nose cone
+                                cubicTo(
+                                    currentX + 16f, currentY - 9f,
+                                    currentX - 8f, currentY - 8f,
+                                    currentX - 18f, currentY - 5f
+                                )
+                                lineTo(currentX - 18f, currentY + 5f)
+                                cubicTo(
+                                    currentX - 8f, currentY + 8f,
+                                    currentX + 16f, currentY + 9f,
+                                    currentX + 26f, currentY
+                                )
+                                close()
+                            }
+                            drawPath(
+                                path = fuselagePath,
+                                brush = Brush.linearGradient(
+                                    colors = listOf(Color(0xFFFF5252), CoralRed, Color(0xFFC62828)),
+                                    start = Offset(currentX, currentY - 8f),
+                                    end = Offset(currentX, currentY + 8f)
+                                )
+                            )
+
+                            // 5. Cockpit Canopy (Tinted cyan glass with reflection)
+                            val cockpitPath = Path().apply {
+                                moveTo(currentX + 14f, currentY - 3f)
+                                quadraticTo(currentX + 8f, currentY - 7f, currentX + 1f, currentY - 4f)
+                                lineTo(currentX + 2f, currentY)
+                                lineTo(currentX + 12f, currentY)
+                                close()
+                            }
+                            drawPath(path = cockpitPath, color = AccentCyan)
+                            // Canopy highlight
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(currentX + 10f, currentY - 3f),
+                                end = Offset(currentX + 4f, currentY - 5f),
+                                strokeWidth = 1.5f
+                            )
+
+                            // 6. Fuselage Racing Stripe / Details
+                            drawLine(
+                                color = Color.White.copy(alpha = 0.9f),
+                                start = Offset(currentX - 14f, currentY),
+                                end = Offset(currentX + 18f, currentY),
+                                strokeWidth = 1.8f
+                            )
+                        }
                     }
                 }
             }
@@ -559,6 +722,65 @@ fun AviatorGame(
                     singleLine = true
                 )
 
+                // Auto Cash Out Control Row
+                Surface(
+                    color = CardBg,
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Switch(
+                                checked = autoCashOutEnabled,
+                                onCheckedChange = { autoCashOutEnabled = it },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = NeonGreen,
+                                    checkedTrackColor = NeonGreen.copy(alpha = 0.4f),
+                                    uncheckedThumbColor = TextMuted,
+                                    uncheckedTrackColor = DarkBg
+                                ),
+                                modifier = Modifier.height(28.dp)
+                            )
+                            Text(
+                                text = "AUTO CASHOUT",
+                                color = if (autoCashOutEnabled) NeonGreen else TextSecondary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        if (autoCashOutEnabled) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                listOf(1.50, 2.00, 3.00, 5.00).forEach { preset ->
+                                    Surface(
+                                        color = if (autoCashOutTarget == preset) NeonGreen else SecondaryBg,
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.clickable {
+                                            autoCashOutTarget = preset
+                                            autoCashOutInputText = String.format("%.2f", preset)
+                                        }
+                                    ) {
+                                        Text(
+                                            text = "${preset}x",
+                                            color = if (autoCashOutTarget == preset) DarkBg else TextSecondary,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 10.sp,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 if (betErrorMessage.isNotBlank()) {
                     Text(
                         text = betErrorMessage,
@@ -657,6 +879,32 @@ fun AviatorGame(
                     }
                 }
             }
+        }
+
+        // Aviator Rules & Info Dialog
+        if (showRulesDialog) {
+            AlertDialog(
+                onDismissRequest = { showRulesDialog = false },
+                title = {
+                    Text("Aviator: Rocket Crash Rules", color = Color.White, fontWeight = FontWeight.Bold)
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("• Place your bet in PKR before takeoff.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• The red rocket multiplier increases from 1.00x upwards.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• Hit 'CASH OUT' or set 'AUTO CASHOUT' before the rocket flies away.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• Payout = Bet Amount × Multiplier at moment of cashout.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• If the rocket flies away before you cash out, the round is lost.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• Certified Provably Fair RNG with up to 10,000x multiplier potential.", color = AccentCyan, fontSize = 12.sp)
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showRulesDialog = false }) {
+                        Text("GOT IT", color = NeonGreen)
+                    }
+                },
+                containerColor = CardBg
+            )
         }
     }
 }

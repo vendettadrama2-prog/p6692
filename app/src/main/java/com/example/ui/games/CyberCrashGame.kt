@@ -24,12 +24,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.atan2
 import kotlin.random.Random
 
 @Composable
@@ -92,6 +94,27 @@ fun CyberCrashGame(
             }
         }
     }
+
+    // Cyber animation loops
+    val infiniteTransition = rememberInfiniteTransition(label = "cyber_effects")
+    val cyberPulse by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(140, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cyber_pulse"
+    )
+    val warpGlow by infiniteTransition.animateFloat(
+        initialValue = 15f,
+        targetValue = 35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(450, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "warp_glow"
+    )
 
     Column(
         modifier = Modifier
@@ -257,6 +280,165 @@ fun CyberCrashGame(
                         color = arcColor,
                         style = Stroke(width = 4.dp.toPx())
                     )
+
+                    // Gradient glowing area under trajectory
+                    val fillPath = Path().apply {
+                        moveTo(w * 0.08f, h * 0.90f)
+                        quadraticTo(
+                            w * 0.40f * flightProgress,
+                            h * 0.90f,
+                            endX,
+                            endY
+                        )
+                        lineTo(endX, h * 0.90f)
+                        close()
+                    }
+                    drawPath(
+                        path = fillPath,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(arcColor.copy(alpha = 0.22f), Color.Transparent),
+                            startY = endY,
+                            endY = h * 0.90f
+                        )
+                    )
+
+                    // CYBER ROCKET / WARP SHIP ANIMATION VISUAL
+                    if (gameState == "FLYING" || gameState == "BAILED") {
+                        // Calculate heading angle
+                        val prevProg = (flightProgress - 0.03f).coerceAtLeast(0f)
+                        val prevX = w * 0.08f + (w * 0.80f * prevProg)
+                        val prevY = h * 0.90f - (h * 0.70f * prevProg)
+                        val dx = endX - prevX
+                        val dy = endY - prevY
+                        val flightAngle = (Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()).coerceIn(-65f, 10f)
+
+                        // Plasma Halo / Shield Field
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(AccentCyan.copy(alpha = 0.6f), PrimaryPurple.copy(alpha = 0.2f), Color.Transparent),
+                                center = Offset(endX, endY),
+                                radius = warpGlow + 20f
+                            ),
+                            radius = warpGlow + 20f,
+                            center = Offset(endX, endY)
+                        )
+
+                        // Draw Cyber Rocket 92 Starship
+                        rotate(degrees = flightAngle, pivot = Offset(endX, endY)) {
+                            // 1. Dual Plasma Exhaust Thrusters
+                            val exhaustLen = 30f * cyberPulse
+                            val flameTop = Path().apply {
+                                moveTo(endX - 16f, endY - 6f)
+                                quadraticTo(endX - 16f - exhaustLen * 0.7f, endY - 6f, endX - 16f - exhaustLen, endY - 6f)
+                                quadraticTo(endX - 16f - exhaustLen * 0.5f, endY - 3f, endX - 16f, endY - 3f)
+                                close()
+                            }
+                            drawPath(
+                                path = flameTop,
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(AccentCyan, NeonGreen, Color.Transparent),
+                                    startX = endX - 16f,
+                                    endX = endX - 16f - exhaustLen
+                                )
+                            )
+
+                            val flameBottom = Path().apply {
+                                moveTo(endX - 16f, endY + 3f)
+                                quadraticTo(endX - 16f - exhaustLen * 0.7f, endY + 6f, endX - 16f - exhaustLen, endY + 6f)
+                                quadraticTo(endX - 16f - exhaustLen * 0.5f, endY + 6f, endX - 16f, endY + 6f)
+                                close()
+                            }
+                            drawPath(
+                                path = flameBottom,
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(AccentCyan, NeonGreen, Color.Transparent),
+                                    startX = endX - 16f,
+                                    endX = endX - 16f - exhaustLen
+                                )
+                            )
+
+                            // 2. Cyber Sweep Wings (Futuristic stealth geometry)
+                            val wings = Path().apply {
+                                moveTo(endX + 8f, endY - 24f) // Top wingtip
+                                lineTo(endX + 14f, endY - 6f)
+                                lineTo(endX - 14f, endY - 5f)
+                                lineTo(endX - 8f, endY - 18f)
+                                close()
+                            }
+                            drawPath(path = wings, color = Color(0xFF1E1035))
+                            drawPath(path = wings, color = AccentCyan, style = Stroke(width = 1.8f))
+
+                            val bottomWings = Path().apply {
+                                moveTo(endX + 8f, endY + 24f) // Bottom wingtip
+                                lineTo(endX + 14f, endY + 6f)
+                                lineTo(endX - 14f, endY + 5f)
+                                lineTo(endX - 8f, endY + 18f)
+                                close()
+                            }
+                            drawPath(path = bottomWings, color = Color(0xFF1E1035))
+                            drawPath(path = bottomWings, color = AccentCyan, style = Stroke(width = 1.8f))
+
+                            // Wingtip Laser Lights
+                            drawCircle(color = AccentCyan, radius = 2.5f, center = Offset(endX + 8f, endY - 24f))
+                            drawCircle(color = NeonGreen, radius = 2.5f, center = Offset(endX + 8f, endY + 24f))
+
+                            // 3. Cyber Rocket Fuselage (Dart-shaped futuristic hull)
+                            val hull = Path().apply {
+                                moveTo(endX + 26f, endY) // Needle nose tip
+                                lineTo(endX + 12f, endY - 8f)
+                                lineTo(endX - 16f, endY - 7f)
+                                lineTo(endX - 18f, endY)
+                                lineTo(endX - 16f, endY + 7f)
+                                lineTo(endX + 12f, endY + 8f)
+                                close()
+                            }
+                            drawPath(
+                                path = hull,
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(Color(0xFF2E1A47), Color(0xFF4C1D95), Color(0xFF1E1B4B)),
+                                    startX = endX - 18f,
+                                    endX = endX + 26f
+                                )
+                            )
+                            drawPath(path = hull, color = BrightPurple, style = Stroke(width = 2f))
+
+                            // 4. Neon Cyber Cockpit / Sensor Array
+                            val cockpit = Path().apply {
+                                moveTo(endX + 18f, endY)
+                                lineTo(endX + 8f, endY - 4f)
+                                lineTo(endX + 2f, endY)
+                                lineTo(endX + 8f, endY + 4f)
+                                close()
+                            }
+                            drawPath(path = cockpit, color = AccentCyan)
+                            drawCircle(color = Color.White, radius = 2f, center = Offset(endX + 12f, endY))
+
+                            // 5. "92" Hull Glow Line
+                            drawLine(
+                                color = NeonGreen,
+                                start = Offset(endX - 10f, endY),
+                                end = Offset(endX + 12f, endY),
+                                strokeWidth = 2f
+                            )
+                        }
+                    } else if (gameState == "CRASHED") {
+                        // Crash explosion shockwave visual
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(CoralRed.copy(alpha = 0.8f), GoldYellow.copy(alpha = 0.4f), Color.Transparent),
+                                center = Offset(endX, endY),
+                                radius = 45f
+                            ),
+                            radius = 45f,
+                            center = Offset(endX, endY)
+                        )
+                        drawCircle(
+                            color = CoralRed,
+                            radius = 18f,
+                            center = Offset(endX, endY),
+                            style = Stroke(width = 3f)
+                        )
+                    }
                 }
             }
 

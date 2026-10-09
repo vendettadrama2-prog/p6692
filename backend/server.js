@@ -143,6 +143,15 @@ function getOrCreateUser(userId, roleHint = 'PLAYER') {
 // -------------------------------------------------------------
 
 // Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    service: 'p6692-backend',
+    environment: process.env.NODE_ENV || 'production',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ONLINE',

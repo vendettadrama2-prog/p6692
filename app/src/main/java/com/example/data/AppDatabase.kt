@@ -298,6 +298,86 @@ abstract class AppDatabase : RoomDatabase() {
                         maxMultiplier = "29x",
                         rtpPercent = 98.7f,
                         accentColorHex = "#22D3EE"
+                    ),
+                    GameEntity(
+                        id = "bubble_shooter",
+                        title = "Bubble Shooter: Laser Grid",
+                        category = "Arcade",
+                        description = "Classic arcade bubble shooter with wall bounce physics, precision aiming laser guide, cluster pops (3+) and up to 15x multiplier in real PKR.",
+                        rating = 4.96f,
+                        playsCount = 310000,
+                        isFeatured = true,
+                        isPopular = true,
+                        isNew = true,
+                        minBetPkr = 25.0,
+                        maxBetPkr = 25000.0,
+                        maxMultiplier = "15x",
+                        rtpPercent = 98.9f,
+                        accentColorHex = "#00E5FF"
+                    ),
+                    GameEntity(
+                        id = "candy_match",
+                        title = "Candy Match-3: Sweet Blast",
+                        category = "Arcade",
+                        description = "Charming match-3 puzzle game with 6x6 matrix, sweet original candies, cascading gravity combos, and escalating payout multipliers up to 20x.",
+                        rating = 4.95f,
+                        playsCount = 295000,
+                        isFeatured = true,
+                        isPopular = true,
+                        isNew = true,
+                        minBetPkr = 25.0,
+                        maxBetPkr = 25000.0,
+                        maxMultiplier = "20x",
+                        rtpPercent = 98.8f,
+                        accentColorHex = "#FF2A85"
+                    ),
+                    GameEntity(
+                        id = "fruit_merge",
+                        title = "Fruit Merge: Watermelon Drop",
+                        category = "Arcade",
+                        description = "Addictive physics drop-and-merge game. Drop fruits and merge pairs from Cherry to Giant Watermelon with realistic gravity and up to 25x multipliers.",
+                        rating = 4.97f,
+                        playsCount = 340000,
+                        isFeatured = true,
+                        isPopular = true,
+                        isNew = true,
+                        minBetPkr = 25.0,
+                        maxBetPkr = 25000.0,
+                        maxMultiplier = "25x",
+                        rtpPercent = 99.1f,
+                        accentColorHex = "#00E676"
+                    ),
+                    GameEntity(
+                        id = "money_coming",
+                        title = "Money Coming: Spin Wheel",
+                        category = "Arcade",
+                        description = "Exciting luxury money wheel! Smooth deceleration, 10 multiplier sectors up to 100x grand jackpot in real PKR.",
+                        rating = 4.96f,
+                        playsCount = 460000,
+                        isFeatured = true,
+                        isPopular = true,
+                        isNew = true,
+                        minBetPkr = 25.0,
+                        maxBetPkr = 25000.0,
+                        maxMultiplier = "100x",
+                        rtpPercent = 98.4f,
+                        accentColorHex = "#FFD700"
+                    ),
+                    GameEntity(
+                        id = "fortune_gems",
+                        title = "Fortune Gems 2",
+                        category = "Slots",
+                        description = "Aztec treasure 3x3 gem slot featuring a special 4th Multiplier Wheel reel for colossal win boosts up to 150x in real PKR.",
+                        rating = 4.98f,
+                        playsCount = 580000,
+                        isFeatured = true,
+                        isPopular = true,
+                        isNew = true,
+                        minBetPkr = 25.0,
+                        maxBetPkr = 25000.0,
+                        maxMultiplier = "150x",
+                        rtpPercent = 97.8f,
+                        accentColorHex = "#10B981"
                     )
                 )
                 db.gameDao().insertGames(games)
@@ -309,6 +389,11 @@ abstract class AppDatabase : RoomDatabase() {
                 db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", "jelly"))
                 db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", "mines"))
                 db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", "plinko"))
+                db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", "bubble_shooter"))
+                db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", "candy_match"))
+                db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", "fruit_merge"))
+                db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", "money_coming"))
+                db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", "fortune_gems"))
             } else {
                 // Ensure Jelly, Aviator, Mines, and Plinko are always present in the existing database
                 val jellyExisting = db.gameDao().getGameById("jelly")
@@ -399,6 +484,121 @@ abstract class AppDatabase : RoomDatabase() {
                                 maxMultiplier = "29x",
                                 rtpPercent = 98.7f,
                                 accentColorHex = "#22D3EE"
+                            )
+                        )
+                    )
+                }
+                val bubbleExisting = db.gameDao().getGameById("bubble_shooter")
+                if (bubbleExisting == null) {
+                    db.gameDao().insertGames(
+                        listOf(
+                            GameEntity(
+                                id = "bubble_shooter",
+                                title = "Bubble Shooter: Laser Grid",
+                                category = "Arcade",
+                                description = "Classic arcade bubble shooter with wall bounce physics, precision aiming laser guide, cluster pops (3+) and up to 15x multiplier in real PKR.",
+                                rating = 4.96f,
+                                playsCount = 310000,
+                                isFeatured = true,
+                                isPopular = true,
+                                isNew = true,
+                                minBetPkr = 25.0,
+                                maxBetPkr = 25000.0,
+                                maxMultiplier = "15x",
+                                rtpPercent = 98.9f,
+                                accentColorHex = "#00E5FF"
+                            )
+                        )
+                    )
+                }
+                val candyExisting = db.gameDao().getGameById("candy_match")
+                if (candyExisting == null) {
+                    db.gameDao().insertGames(
+                        listOf(
+                            GameEntity(
+                                id = "candy_match",
+                                title = "Candy Match-3: Sweet Blast",
+                                category = "Arcade",
+                                description = "Charming match-3 puzzle game with 6x6 matrix, sweet original candies, cascading gravity combos, and escalating payout multipliers up to 20x.",
+                                rating = 4.95f,
+                                playsCount = 295000,
+                                isFeatured = true,
+                                isPopular = true,
+                                isNew = true,
+                                minBetPkr = 25.0,
+                                maxBetPkr = 25000.0,
+                                maxMultiplier = "20x",
+                                rtpPercent = 98.8f,
+                                accentColorHex = "#FF2A85"
+                            )
+                        )
+                    )
+                }
+                val fruitExisting = db.gameDao().getGameById("fruit_merge")
+                if (fruitExisting == null) {
+                    db.gameDao().insertGames(
+                        listOf(
+                            GameEntity(
+                                id = "fruit_merge",
+                                title = "Fruit Merge: Watermelon Drop",
+                                category = "Arcade",
+                                description = "Addictive physics drop-and-merge game. Drop fruits and merge pairs from Cherry to Giant Watermelon with realistic gravity and up to 25x multipliers.",
+                                rating = 4.97f,
+                                playsCount = 340000,
+                                isFeatured = true,
+                                isPopular = true,
+                                isNew = true,
+                                minBetPkr = 25.0,
+                                maxBetPkr = 25000.0,
+                                maxMultiplier = "25x",
+                                rtpPercent = 99.1f,
+                                accentColorHex = "#00E676"
+                            )
+                        )
+                    )
+                }
+                val moneyComingExisting = db.gameDao().getGameById("money_coming")
+                if (moneyComingExisting == null) {
+                    db.gameDao().insertGames(
+                        listOf(
+                            GameEntity(
+                                id = "money_coming",
+                                title = "Money Coming: Spin Wheel",
+                                category = "Arcade",
+                                description = "Exciting luxury money wheel! Smooth deceleration, 10 multiplier sectors up to 100x grand jackpot in real PKR.",
+                                rating = 4.96f,
+                                playsCount = 460000,
+                                isFeatured = true,
+                                isPopular = true,
+                                isNew = true,
+                                minBetPkr = 25.0,
+                                maxBetPkr = 25000.0,
+                                maxMultiplier = "100x",
+                                rtpPercent = 98.4f,
+                                accentColorHex = "#FFD700"
+                            )
+                        )
+                    )
+                }
+                val fortuneGemsExisting = db.gameDao().getGameById("fortune_gems")
+                if (fortuneGemsExisting == null) {
+                    db.gameDao().insertGames(
+                        listOf(
+                            GameEntity(
+                                id = "fortune_gems",
+                                title = "Fortune Gems 2",
+                                category = "Slots",
+                                description = "Aztec treasure 3x3 gem slot featuring a special 4th Multiplier Wheel reel for colossal win boosts up to 150x in real PKR.",
+                                rating = 4.98f,
+                                playsCount = 580000,
+                                isFeatured = true,
+                                isPopular = true,
+                                isNew = true,
+                                minBetPkr = 25.0,
+                                maxBetPkr = 25000.0,
+                                maxMultiplier = "150x",
+                                rtpPercent = 97.8f,
+                                accentColorHex = "#10B981"
                             )
                         )
                     )
