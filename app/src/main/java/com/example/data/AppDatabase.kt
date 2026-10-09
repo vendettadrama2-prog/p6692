@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
         WithdrawalEntity::class,
         JazzCashConfigEntity::class
     ],
-    version = 5,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -103,12 +103,12 @@ abstract class AppDatabase : RoomDatabase() {
                 db.userDao().setPkrBalance("p6692_user_1", 25000.0)
             }
 
-            // 2. Seed / Upsert all 17 canonical games to ensure all games (Aviator, Fortune Gems 2, Money Coming, etc.) exist and are enabled
+            // 2. Seed / Upsert all canonical games to ensure all games (Fortune Gems 2, Spin Master Spain, Rocket 92 Aviator, etc.) exist and are enabled
             for (game in CANONICAL_GAMES) {
                 val existing = db.gameDao().getGameById(game.id)
                 if (existing == null) {
                     db.gameDao().insertGames(listOf(game))
-                } else if (!existing.isEnabled) {
+                } else {
                     db.gameDao().setGameEnabled(game.id, true)
                 }
             }

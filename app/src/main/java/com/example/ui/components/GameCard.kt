@@ -100,6 +100,10 @@ fun GameCard(
 
                 // Big Game Icon Silhouette
                 val emojiIcon = when (game.id) {
+                    "car_racing", "racing" -> "🏎️"
+                    "ludo_game", "ludo" -> "🎲"
+                    "subway_runner", "runner" -> "🏃"
+                    "piano_tiles", "piano" -> "🎹"
                     "money_coming", "spin", "spain", "spinning_wheel", "spin_wheel" -> "🎡"
                     "fortune_gems", "fortune_gems_2" -> "💎"
                     "bubble_shooter" -> "🎯"

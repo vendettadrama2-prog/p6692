@@ -340,6 +340,7 @@ fun HomeScreen(
                 ) {
                     items(categories) { cat ->
                         val isSel = selectedCategory == cat
+                        val count = if (cat == "All") games.size else games.count { it.category.equals(cat, ignoreCase = true) }
                         Surface(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
@@ -352,7 +353,7 @@ fun HomeScreen(
                             )
                         ) {
                             Text(
-                                text = cat,
+                                text = "$cat ($count)",
                                 color = if (isSel) Color.White else TextSecondary,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,

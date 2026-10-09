@@ -1,6 +1,126 @@
 package com.example.data
 
 val CANONICAL_GAMES: List<GameEntity> = listOf(
+    // 1. Premium Car Racing
+    GameEntity(
+        id = "car_racing",
+        title = "Premium Car Racing",
+        category = "Arcade",
+        description = "High-octane neon highway racer! Steer, accelerate, brake, and weave through traffic to set high scores.",
+        rating = 4.98f,
+        playsCount = 420000,
+        isFeatured = true,
+        isPopular = true,
+        isNew = true,
+        minBetPkr = 20.0,
+        maxBetPkr = 20000.0,
+        maxMultiplier = "100x",
+        rtpPercent = 98.5f,
+        accentColorHex = "#8B5CF6"
+    ),
+    // 2. Ludo Master Club
+    GameEntity(
+        id = "ludo_game",
+        title = "Ludo Master Club",
+        category = "Cards",
+        description = "Classic 2-4 player board game on one device with authentic dice rolling, legal move highlights, token captures, and home glory.",
+        rating = 4.96f,
+        playsCount = 580000,
+        isFeatured = true,
+        isPopular = true,
+        isNew = true,
+        minBetPkr = 50.0,
+        maxBetPkr = 25000.0,
+        maxMultiplier = "80x",
+        rtpPercent = 98.9f,
+        accentColorHex = "#EF4444"
+    ),
+    // 3. Subway Runner 3D
+    GameEntity(
+        id = "subway_runner",
+        title = "Subway Runner 3D",
+        category = "Arcade",
+        description = "Endless rail sprint! Swipe left/right across 3 tracks, jump over hurdles, slide beneath barriers, and collect golden coins.",
+        rating = 4.99f,
+        playsCount = 650000,
+        isFeatured = true,
+        isPopular = true,
+        isNew = true,
+        minBetPkr = 25.0,
+        maxBetPkr = 20000.0,
+        maxMultiplier = "150x",
+        rtpPercent = 98.8f,
+        accentColorHex = "#22D3EE"
+    ),
+    // 4. Neon Piano Tiles
+    GameEntity(
+        id = "piano_tiles",
+        title = "Neon Piano Tiles",
+        category = "Arcade",
+        description = "Rhythm virtuoso concert! Tap black neon tiles on the beat, sustain combos, choose 3 difficulty modes or practice mode.",
+        rating = 4.97f,
+        playsCount = 470000,
+        isFeatured = true,
+        isPopular = true,
+        isNew = true,
+        minBetPkr = 25.0,
+        maxBetPkr = 20000.0,
+        maxMultiplier = "120x",
+        rtpPercent = 98.4f,
+        accentColorHex = "#B56CFF"
+    ),
+    // 5. Fortune Gems 2 Deluxe
+    GameEntity(
+        id = "fortune_gems_2",
+        title = "Fortune Gems 2: Deluxe Wheel",
+        category = "Slots",
+        description = "Upgraded Aztec treasure 3x3 slot with dynamic 4th Multiplier Wheel reel for colossal win boosts up to 200x in real PKR.",
+        rating = 4.99f,
+        playsCount = 610000,
+        isFeatured = true,
+        isPopular = true,
+        isNew = true,
+        minBetPkr = 25.0,
+        maxBetPkr = 25000.0,
+        maxMultiplier = "200x",
+        rtpPercent = 98.2f,
+        accentColorHex = "#10B981"
+    ),
+    // 2. Newly Added Game: Spin / Spain Wheel Deluxe
+    GameEntity(
+        id = "spin_wheel",
+        title = "Spin Master: Spain Deluxe",
+        category = "Arcade",
+        description = "High-velocity luxury spin wheel with 10 jackpot sectors, smooth deceleration physics, and instant multipliers up to 150x in real PKR.",
+        rating = 4.97f,
+        playsCount = 490000,
+        isFeatured = true,
+        isPopular = true,
+        isNew = true,
+        minBetPkr = 25.0,
+        maxBetPkr = 25000.0,
+        maxMultiplier = "150x",
+        rtpPercent = 98.6f,
+        accentColorHex = "#FFD700"
+    ),
+    // 3. Newly Added Game: Rocket 92 Aviator Flight
+    GameEntity(
+        id = "rocket_aviator",
+        title = "Rocket 92: Aviator Flight",
+        category = "Crash",
+        description = "Supersonic red rocket flight curve with animated afterburner flames. Watch the multiplier soar up to 10,000x and cash out in real PKR!",
+        rating = 4.99f,
+        playsCount = 550000,
+        isFeatured = true,
+        isPopular = true,
+        isNew = true,
+        minBetPkr = 50.0,
+        maxBetPkr = 25000.0,
+        maxMultiplier = "10,000x",
+        rtpPercent = 99.2f,
+        accentColorHex = "#F43F5E"
+    ),
+    // 4. Fortune Gems Original
     GameEntity(
         id = "fortune_gems",
         title = "Fortune Gems 2",
@@ -17,6 +137,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 97.8f,
         accentColorHex = "#10B981"
     ),
+    // 5. Aviator High Ascent
     GameEntity(
         id = "aviator",
         title = "Aviator: High Ascent",
@@ -33,6 +154,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 99.0f,
         accentColorHex = "#F43F5E"
     ),
+    // 6. Money Coming Spin Wheel
     GameEntity(
         id = "money_coming",
         title = "Money Coming: Spin Wheel",
@@ -49,6 +171,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.4f,
         accentColorHex = "#FFD700"
     ),
+    // 7. Cyber Crash Rocket
     GameEntity(
         id = "cyber_crash",
         title = "Cyber Crash: Rocket 92",
@@ -65,6 +188,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.2f,
         accentColorHex = "#22D3EE"
     ),
+    // 8. Mines Diamond Grid
     GameEntity(
         id = "mines",
         title = "Mines: Diamond Grid",
@@ -81,6 +205,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.8f,
         accentColorHex = "#10B981"
     ),
+    // 9. Plinko Neon Drop
     GameEntity(
         id = "plinko",
         title = "Plinko: Neon Drop",
@@ -97,6 +222,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.7f,
         accentColorHex = "#22D3EE"
     ),
+    // 10. Jelly Cluster Rush
     GameEntity(
         id = "jelly",
         title = "Jelly: Cluster Rush",
@@ -113,6 +239,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.6f,
         accentColorHex = "#B56CFF"
     ),
+    // 11. Fruit Merge Watermelon
     GameEntity(
         id = "fruit_merge",
         title = "Fruit Merge: Watermelon Drop",
@@ -129,6 +256,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 99.1f,
         accentColorHex = "#00E676"
     ),
+    // 12. Mega 777 Neon Rush Slots
     GameEntity(
         id = "neon_spin",
         title = "Mega 777 Neon Rush",
@@ -145,6 +273,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 97.8f,
         accentColorHex = "#B56CFF"
     ),
+    // 13. Bubble Shooter
     GameEntity(
         id = "bubble_shooter",
         title = "Bubble Shooter: Laser Grid",
@@ -161,6 +290,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.9f,
         accentColorHex = "#00E5FF"
     ),
+    // 14. Candy Match-3
     GameEntity(
         id = "candy_match",
         title = "Candy Match-3: Sweet Blast",
@@ -177,6 +307,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.8f,
         accentColorHex = "#FF2A85"
     ),
+    // 15. Neon Plinko
     GameEntity(
         id = "neon_plinko",
         title = "Neon Plinko Drop",
@@ -193,6 +324,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.4f,
         accentColorHex = "#8B5CF6"
     ),
+    // 16. Dragon Strike
     GameEntity(
         id = "dragon_strike",
         title = "Dragon Strike 6692",
@@ -209,6 +341,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 97.6f,
         accentColorHex = "#F59E0B"
     ),
+    // 17. Grid Hunter Cyber Mines
     GameEntity(
         id = "cyber_mines",
         title = "Grid Hunter: Cyber Mines",
@@ -225,6 +358,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 98.5f,
         accentColorHex = "#10B981"
     ),
+    // 18. Cyber Dice 99
     GameEntity(
         id = "speed_dice",
         title = "Cyber Dice 99",
@@ -241,6 +375,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 99.0f,
         accentColorHex = "#3B82F6"
     ),
+    // 19. Cyber 21 Neon Deck
     GameEntity(
         id = "neon_blackjack",
         title = "Cyber 21: Neon Deck",
@@ -257,6 +392,7 @@ val CANONICAL_GAMES: List<GameEntity> = listOf(
         rtpPercent = 99.1f,
         accentColorHex = "#FBBF24"
     ),
+    // 20. Quantum Neon Wheel
     GameEntity(
         id = "quantum_roulette",
         title = "Quantum Neon Wheel",

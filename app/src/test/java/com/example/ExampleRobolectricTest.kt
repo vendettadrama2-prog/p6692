@@ -35,6 +35,9 @@ class ExampleRobolectricTest {
         assertTrue("Mines must be present", gameIds.contains("mines"))
         assertTrue("Plinko must be present", gameIds.contains("plinko"))
         assertTrue("Jelly Cluster Rush must be present", gameIds.contains("jelly"))
+        assertTrue("Fortune Gems 2 Deluxe must be present", gameIds.contains("fortune_gems_2"))
+        assertTrue("Spin Master Spain Deluxe must be present", gameIds.contains("spin_wheel"))
+        assertTrue("Rocket 92 Aviator Flight must be present", gameIds.contains("rocket_aviator"))
 
         // Check categories
         val aviator = CANONICAL_GAMES.first { it.id == "aviator" }
@@ -45,13 +48,25 @@ class ExampleRobolectricTest {
         assertEquals("Slots", fortuneGems.category)
         assertEquals("Fortune Gems 2", fortuneGems.title)
 
+        val fortuneGems2 = CANONICAL_GAMES.first { it.id == "fortune_gems_2" }
+        assertEquals("Slots", fortuneGems2.category)
+        assertEquals("Fortune Gems 2: Deluxe Wheel", fortuneGems2.title)
+
+        val spinWheel = CANONICAL_GAMES.first { it.id == "spin_wheel" }
+        assertEquals("Arcade", spinWheel.category)
+        assertEquals("Spin Master: Spain Deluxe", spinWheel.title)
+
+        val rocketAviator = CANONICAL_GAMES.first { it.id == "rocket_aviator" }
+        assertEquals("Crash", rocketAviator.category)
+        assertEquals("Rocket 92: Aviator Flight", rocketAviator.title)
+
         val moneyComing = CANONICAL_GAMES.first { it.id == "money_coming" }
         assertEquals("Arcade", moneyComing.category)
         assertEquals("Money Coming: Spin Wheel", moneyComing.title)
     }
 
     @Test
-    fun `database seeding populates all 17 canonical games on clean install`() = runBlocking {
+    fun `database seeding populates all canonical games on clean install`() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val inMemoryDb = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
 
@@ -98,5 +113,11 @@ class ExampleRobolectricTest {
         assertTrue(arcadeGames.any { it.id == "bubble_shooter" })
         assertTrue(arcadeGames.any { it.id == "candy_match" })
         assertTrue(arcadeGames.any { it.id == "fruit_merge" })
+        assertTrue(arcadeGames.any { it.id == "car_racing" })
+        assertTrue(arcadeGames.any { it.id == "subway_runner" })
+        assertTrue(arcadeGames.any { it.id == "piano_tiles" })
+
+        val cardGames = CANONICAL_GAMES.filter { it.category.equals("Cards", ignoreCase = true) }
+        assertTrue(cardGames.any { it.id == "ludo_game" })
     }
 }
