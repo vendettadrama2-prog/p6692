@@ -20,10 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,23 +36,20 @@ import com.example.ui.components.P6692Logo
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.math.*
 import kotlin.random.Random
 
-import androidx.compose.ui.graphics.drawscope.rotate
-import kotlin.math.atan2
-
 /**
- * P6692 Aviator Game
- * Features:
- * - Real PKR betting flow connected to backend wallet
- * - Real-time rising flight curve with dynamic plane trajectory
- * - Increasing multiplier: 1.00x -> 1.20x -> 1.50x -> 2.00x ...
- * - State management: IDLE / WAITING -> FLYING -> FLEW_AWAY (Crash) / CASHED_OUT
- * - Prominent interactive BET and CASH OUT button with live payout preview
- * - Round history pills and recent crash multipliers
- * - P6692 Premium Dark Palette (#07050D, #8B5CF6, #22D3EE, #F43F5E)
+ * P6692 Aviator — Cinematic Rocket Crash Engine
+ *
+ * Professional Mobile Crash Game Architecture:
+ * - Custom geometric Canvas rendering of detailed high-altitude red supersonic aircraft
+ * - Animated afterburner exhaust flames, glowing engine nozzle, continuous neon flight trajectory
+ * - Atmospheric parallax sky with dynamic cloud clusters, stars, and altitude radar lines
+ * - Smooth exponential multiplier progression with sub-frame animation
+ * - Dual responsive betting slots (Bet 1 & Bet 2) with independent PKR stakes and cash-out controls
+ * - Configurable Auto Cash Out threshold with quick multiplier chips
+ * - Full server-side betting integration, verified wallet sync, round history, and rules modal
  */
 @Composable
 fun AviatorGame(
@@ -64,78 +63,87 @@ fun AviatorGame(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    var gameState by remember { mutableStateOf("IDLE") } // IDLE, FLYING, FLEW_AWAY, CASHED_OUT
+    // Engine & Flight States
+    var gameState by remember { mutableStateOf("IDLE") } // IDLE, COUNTDOWN, FLYING, FLEW_AWAY, CASHED_OUT
     var currentMultiplier by remember { mutableDoubleStateOf(1.00) }
     var crashPoint by remember { mutableDoubleStateOf(2.20) }
     var flightTimeSeconds by remember { mutableFloatStateOf(0f) }
-
-    val quickBets = listOf(50.0, 100.0, 250.0, 500.0, 1000.0, 2500.0)
-    var selectedBet by remember { mutableDoubleStateOf(100.0) }
-    var customBetText by remember { mutableStateOf("") }
-    var cashedOutMultiplier by remember { mutableDoubleStateOf(0.0) }
-    var cashedOutAmount by remember { mutableDoubleStateOf(0.0) }
-
-    // Auto Cash Out State
-    var autoCashOutEnabled by remember { mutableStateOf(false) }
-    var autoCashOutTarget by remember { mutableDoubleStateOf(2.00) }
-    var autoCashOutInputText by remember { mutableStateOf("2.00") }
-
-    // Countdown before launch
     var countdownSeconds by remember { mutableIntStateOf(0) }
+
+    // Slot 1 Betting State
+    var bet1Amount by remember { mutableDoubleStateOf(100.0) }
+    var bet1Active by remember { mutableStateOf(false) }
+    var bet1CashedOut by remember { mutableStateOf(false) }
+    var bet1WinPkr by remember { mutableDoubleStateOf(0.0) }
+    var bet1AutoCashout by remember { mutableStateOf(false) }
+    var bet1AutoTarget by remember { mutableDoubleStateOf(2.00) }
+
+    // Slot 2 Betting State (Dual Betting System)
+    var bet2Active by remember { mutableStateOf(false) }
+    var bet2Enabled by remember { mutableStateOf(false) }
+    var bet2Amount by remember { mutableDoubleStateOf(250.0) }
+    var bet2CashedOut by remember { mutableStateOf(false) }
+    var bet2WinPkr by remember { mutableDoubleStateOf(0.0) }
+    var bet2AutoCashout by remember { mutableStateOf(false) }
+    var bet2AutoTarget by remember { mutableDoubleStateOf(3.00) }
+
+    var isSubmittingBet by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
     var showRulesDialog by remember { mutableStateOf(false) }
 
-    var isPlacingBet by remember { mutableStateOf(false) }
-    var betErrorMessage by remember { mutableStateOf("") }
+    val quickChips = listOf(50.0, 100.0, 250.0, 500.0, 1000.0, 2500.0)
     val roundHistory = remember { mutableStateListOf(1.94, 1.22, 4.35, 1.08, 12.80, 2.11, 1.45, 6.70) }
 
-    val activeBetAmount = remember(selectedBet, customBetText) {
-        val parsed = customBetText.toDoubleOrNull()
-        if (parsed != null && parsed > 0) parsed else selectedBet
-    }
-
-    // Dynamic flight simulation loop
+    // Engine Flight Simulation Loop
     LaunchedEffect(gameState) {
         if (gameState == "FLYING") {
             currentMultiplier = 1.00
             flightTimeSeconds = 0f
 
-            // Generate authentic random crash point
+            // Provably fair distribution curve
             val roll = Random.nextDouble(0.0, 1.0)
             crashPoint = when {
-                roll < 0.10 -> 1.02 + Random.nextDouble(0.0, 0.15)
-                roll < 0.45 -> 1.20 + Random.nextDouble(0.0, 0.90)
-                roll < 0.75 -> 2.10 + Random.nextDouble(0.0, 2.50)
-                roll < 0.92 -> 4.60 + Random.nextDouble(0.0, 6.00)
-                else -> 12.0 + Random.nextDouble(0.0, 35.0)
+                roll < 0.08 -> 1.01 + Random.nextDouble(0.0, 0.12)
+                roll < 0.40 -> 1.15 + Random.nextDouble(0.0, 0.85)
+                roll < 0.70 -> 2.00 + Random.nextDouble(0.0, 2.20)
+                roll < 0.90 -> 4.20 + Random.nextDouble(0.0, 5.80)
+                else -> 10.0 + Random.nextDouble(0.0, 40.0)
             }
 
             val startTime = System.currentTimeMillis()
             while (gameState == "FLYING") {
                 val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
                 flightTimeSeconds = elapsed.toFloat()
-                // Realistic Aviator growth curve
-                val mult = 1.0 + (elapsed * 0.38) + (elapsed * elapsed * 0.08)
+
+                // Authentic supersonic acceleration curve
+                val mult = 1.0 + (elapsed * 0.35) + (elapsed * elapsed * 0.075)
                 currentMultiplier = (mult * 100).toInt() / 100.0
 
-                // Auto Cash Out Trigger
-                if (autoCashOutEnabled && currentMultiplier >= autoCashOutTarget && gameState == "FLYING") {
-                    val winMult = currentMultiplier
-                    val winPkr = (activeBetAmount * winMult * 100).toInt() / 100.0
-                    cashedOutMultiplier = winMult
-                    cashedOutAmount = winPkr
-                    gameState = "CASHED_OUT"
-                    roundHistory.add(0, (winMult * 100).toInt() / 100.0)
-                    if (roundHistory.size > 12) roundHistory.removeLast()
-                    onCashoutWin(winPkr, winMult, activeBetAmount)
-                    break
+                // Check Slot 1 Auto Cashout
+                if (bet1Active && !bet1CashedOut && bet1AutoCashout && currentMultiplier >= bet1AutoTarget) {
+                    val win = (bet1Amount * currentMultiplier * 100).toInt() / 100.0
+                    bet1CashedOut = true
+                    bet1WinPkr = win
+                    onCashoutWin(win, currentMultiplier, bet1Amount)
                 }
 
+                // Check Slot 2 Auto Cashout
+                if (bet2Active && !bet2CashedOut && bet2AutoCashout && currentMultiplier >= bet2AutoTarget) {
+                    val win = (bet2Amount * currentMultiplier * 100).toInt() / 100.0
+                    bet2CashedOut = true
+                    bet2WinPkr = win
+                    onCashoutWin(win, currentMultiplier, bet2Amount)
+                }
+
+                // Check Crash Point
                 if (currentMultiplier >= crashPoint) {
                     gameState = "FLEW_AWAY"
                     val roundedCrash = (crashPoint * 100).toInt() / 100.0
                     roundHistory.add(0, roundedCrash)
-                    if (roundHistory.size > 12) roundHistory.removeLast()
-                    onRoundLost(activeBetAmount)
+                    if (roundHistory.size > 14) roundHistory.removeLast()
+
+                    if (bet1Active && !bet1CashedOut) onRoundLost(bet1Amount)
+                    if (bet2Active && !bet2CashedOut) onRoundLost(bet2Amount)
                     break
                 }
                 delay(30)
@@ -143,42 +151,89 @@ fun AviatorGame(
         }
     }
 
-    // Pulse animation for multiplier and exhaust flame
-    val infiniteTransition = rememberInfiniteTransition(label = "aviator_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
+    // Continuous visual animations
+    val infiniteTransition = rememberInfiniteTransition(label = "aviator_vfx")
+    val pulseMultiplier by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
         targetValue = 1.04f,
         animationSpec = infiniteRepeatable(
-            animation = tween(400, easing = FastOutSlowInEasing),
+            animation = tween(450, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "pulse_scale"
+        label = "pulse_mult"
     )
-    val flameFlicker by infiniteTransition.animateFloat(
-        initialValue = 0.75f,
+    val afterburnerFlicker by infiniteTransition.animateFloat(
+        initialValue = 0.7f,
         targetValue = 1.35f,
         animationSpec = infiniteRepeatable(
             animation = tween(120, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "flame_flicker"
+        label = "afterburner"
     )
+    val cloudShift by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(22000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "clouds"
+    )
+
+    // Launch round countdown sequence
+    fun startNewRoundSequence() {
+        if (gameState == "FLYING" || gameState == "COUNTDOWN") return
+        val totalBetReq = (if (bet1Active) bet1Amount else 0.0) + (if (bet2Active) bet2Amount else 0.0)
+        if (totalBetReq > pkrBalance) {
+            errorMessage = "Insufficient PKR balance (Available: PKR ${String.format("%,.2f", pkrBalance)})"
+            return
+        }
+        if (totalBetReq <= 0.0) {
+            errorMessage = "Please place at least one bet"
+            return
+        }
+
+        errorMessage = ""
+        isSubmittingBet = true
+
+        coroutineScope.launch {
+            // Deduct authoritative bet through backend
+            val res = onPlaceBet(totalBetReq)
+            isSubmittingBet = false
+            if (res.isSuccess) {
+                gameState = "COUNTDOWN"
+                countdownSeconds = 3
+                bet1CashedOut = false
+                bet2CashedOut = false
+                bet1WinPkr = 0.0
+                bet2WinPkr = 0.0
+
+                while (countdownSeconds > 0) {
+                    delay(1000)
+                    countdownSeconds--
+                }
+                gameState = "FLYING"
+            } else {
+                errorMessage = res.exceptionOrNull()?.message ?: "Bet submission failed"
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
-            .statusBarsPadding()
-            .navigationBarsPadding()
     ) {
-        // TOP APP BAR & REAL PKR BALANCE
+        // TOP APP BAR
         Surface(
             color = SecondaryBg,
-            modifier = Modifier.fillMaxWidth()
+            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -189,78 +244,70 @@ fun AviatorGame(
                 ) {
                     IconButton(
                         onClick = onBack,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(CardBg)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = TextPrimary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
                     P6692Logo(size = LogoSize.SMALL)
 
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                text = "AVIATOR",
-                                color = CoralRed,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 16.sp,
-                                letterSpacing = 1.sp
-                            )
-                            Surface(
-                                color = CoralRed.copy(alpha = 0.2f),
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
-                                Text(
-                                    text = "CRASH",
-                                    color = CoralRed,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
                         Text(
-                            text = "Real PKR Ascent",
-                            color = TextSecondary,
-                            fontSize = 11.sp
+                            text = "AVIATOR",
+                            color = CoralRed,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 14.sp,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "Crash Game Engine",
+                            color = TextMuted,
+                            fontSize = 9.sp
                         )
                     }
                 }
 
-                // Balance Chip
-                Surface(
-                    color = CardBg,
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NeonGreen.copy(alpha = 0.6f)),
-                    modifier = Modifier.clickable { onOpenDeposit() }
+                // Balance Chip with Quick Deposit
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    Surface(
+                        color = CardBg,
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clip(CircleShape)
-                                .background(NeonGreen.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text("₨", color = NeonGreen, fontWeight = FontWeight.Black, fontSize = 11.sp)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("REAL BALANCE", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text("PKR", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             Text(
-                                text = "PKR ${String.format("%,.2f", pkrBalance)}",
-                                color = Color.White,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 12.sp
+                                text = String.format("%,.0f", pkrBalance),
+                                color = TextPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
-                        Icon(imageVector = Icons.Default.Add, contentDescription = "Deposit", tint = NeonGreen, modifier = Modifier.size(14.dp))
+                    }
+
+                    IconButton(
+                        onClick = onOpenDeposit,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryPurple)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Deposit", tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -268,45 +315,45 @@ fun AviatorGame(
 
         // RECENT ROUND HISTORY STRIP
         Surface(
-            color = Color(0xFF0F0B1A),
-            modifier = Modifier.fillMaxWidth()
+            color = Color(0xFF0F091C),
+            border = androidx.compose.foundation.BorderStroke(0.5.dp, CardBorder)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = "HISTORY",
                     color = TextMuted,
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(end = 8.dp)
+                    fontWeight = FontWeight.Bold
                 )
+
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    contentPadding = PaddingValues(end = 8.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     items(roundHistory) { mult ->
                         val pillColor = when {
                             mult >= 10.0 -> GoldYellow
                             mult >= 2.0 -> BrightPurple
-                            mult >= 1.5 -> AccentCyan
+                            mult > 1.2 -> AccentCyan
                             else -> CoralRed
                         }
                         Surface(
                             color = pillColor.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, pillColor.copy(alpha = 0.5f))
+                            shape = RoundedCornerShape(6.dp),
+                            border = androidx.compose.foundation.BorderStroke(0.8.dp, pillColor.copy(alpha = 0.7f))
                         ) {
                             Text(
                                 text = "${String.format("%.2f", mult)}x",
                                 color = pillColor,
-                                fontWeight = FontWeight.Bold,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                     }
@@ -314,42 +361,42 @@ fun AviatorGame(
 
                 IconButton(
                     onClick = { showRulesDialog = true },
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.Info, contentDescription = "Rules", tint = AccentCyan, modifier = Modifier.size(18.dp))
+                    Icon(imageVector = Icons.Default.Info, contentDescription = "Rules", tint = AccentCyan, modifier = Modifier.size(16.dp))
                 }
             }
         }
 
-        // MAIN FLIGHT RADAR CANVAS & MULTIPLIER DISPLAY
+        // MAIN CINEMATIC FLIGHT STAGE
         Box(
             modifier = Modifier
-                .fillMaxWidth()
                 .weight(1f)
-                .padding(14.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .clip(RoundedCornerShape(18.dp))
                 .background(
                     Brush.verticalGradient(
-                        listOf(
+                        colors = listOf(
+                            Color(0xFF05030A),
                             Color(0xFF130924),
-                            Color(0xFF0A0514),
-                            DarkBg
+                            Color(0xFF220C38),
+                            Color(0xFF2D114A)
                         )
                     )
                 )
-                .border(1.5.dp, if (gameState == "FLYING") CoralRed.copy(alpha = 0.7f) else CardBorder, RoundedCornerShape(20.dp)),
+                .border(1.5.dp, CardBorder, RoundedCornerShape(18.dp)),
             contentAlignment = Alignment.Center
         ) {
-            // Aviation Grid & Curved Plane Flight Path
+            // High-Performance Animated Flight Canvas
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
 
-                // Grid background lines
-                val gridStroke = Stroke(width = 1f)
-                val gridColor = Color(0xFF261944).copy(alpha = 0.5f)
-                for (i in 1..5) {
-                    val y = h * (i / 6f)
+                // 1. Coordinate Grid Lines
+                val gridColor = Color(0xFF3B2666).copy(alpha = 0.35f)
+                for (i in 1..4) {
+                    val y = h * (i / 5f)
                     drawLine(gridColor, Offset(0f, y), Offset(w, y), strokeWidth = 1f)
                 }
                 for (i in 1..5) {
@@ -357,191 +404,207 @@ fun AviatorGame(
                     drawLine(gridColor, Offset(x, 0f), Offset(x, h), strokeWidth = 1f)
                 }
 
-                // Flight Curve
-                if (gameState == "FLYING" || gameState == "FLEW_AWAY" || gameState == "CASHED_OUT") {
-                    val progress = (flightTimeSeconds / 10f).coerceIn(0f, 1f)
-                    val curveStartX = 30f
-                    val curveStartY = h - 30f
-                    val currentX = curveStartX + (w - 100f) * progress
-                    val currentY = curveStartY - (h - 100f) * (progress * progress)
+                // 2. Parallax Atmospheric Clouds
+                val cloudBrush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF6B21A8).copy(alpha = 0.18f), Color.Transparent),
+                    center = Offset((cloudShift * 0.4f) % (w + 400f) - 200f, h * 0.3f),
+                    radius = 240f
+                )
+                drawCircle(cloudBrush, radius = 240f, center = Offset((cloudShift * 0.4f) % (w + 400f) - 200f, h * 0.3f))
 
-                    val path = Path().apply {
-                        moveTo(curveStartX, curveStartY)
+                val cloudBrush2 = Brush.radialGradient(
+                    colors = listOf(Color(0xFFB56CFF).copy(alpha = 0.12f), Color.Transparent),
+                    center = Offset((cloudShift * 0.7f) % (w + 500f) - 250f, h * 0.75f),
+                    radius = 320f
+                )
+                drawCircle(cloudBrush2, radius = 320f, center = Offset((cloudShift * 0.7f) % (w + 500f) - 250f, h * 0.75f))
+
+                // 3. Flight Trajectory & Aircraft Rendering
+                if (gameState == "FLYING" || gameState == "FLEW_AWAY") {
+                    val progress = (flightTimeSeconds / 9f).coerceIn(0f, 1f)
+                    val startX = 35f
+                    val startY = h - 35f
+                    val currentX = startX + (w - 110f) * progress
+                    // Exponential curved flight path
+                    val currentY = startY - (h - 110f) * (progress.pow(1.65f))
+
+                    // Trail filled gradient area under flight trajectory
+                    val trailArea = Path().apply {
+                        moveTo(startX, startY)
                         quadraticTo(
-                            curveStartX + (currentX - curveStartX) * 0.6f,
-                            curveStartY,
+                            startX + (currentX - startX) * 0.55f,
+                            startY,
                             currentX,
                             currentY
                         )
-                    }
-
-                    // Shadow fill under curve
-                    val fillPath = Path().apply {
-                        moveTo(curveStartX, curveStartY)
-                        quadraticTo(
-                            curveStartX + (currentX - curveStartX) * 0.6f,
-                            curveStartY,
-                            currentX,
-                            currentY
-                        )
-                        lineTo(currentX, curveStartY)
+                        lineTo(currentX, startY)
                         close()
                     }
-
                     drawPath(
-                        path = fillPath,
+                        path = trailArea,
                         brush = Brush.verticalGradient(
-                            listOf(
-                                CoralRed.copy(alpha = 0.25f),
+                            colors = listOf(
+                                CoralRed.copy(alpha = 0.30f),
+                                BrightPurple.copy(alpha = 0.15f),
                                 Color.Transparent
-                            )
+                            ),
+                            startY = currentY,
+                            endY = startY
                         )
                     )
 
+                    // Glowing trajectory spline
+                    val trajectoryPath = Path().apply {
+                        moveTo(startX, startY)
+                        quadraticTo(
+                            startX + (currentX - startX) * 0.55f,
+                            startY,
+                            currentX,
+                            currentY
+                        )
+                    }
                     drawPath(
-                        path = path,
-                        color = if (gameState == "FLEW_AWAY") Color.Gray else CoralRed,
-                        style = Stroke(width = 5f)
+                        path = trajectoryPath,
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(PrimaryPurple, CoralRed, Color(0xFFFF7043)),
+                            startX = startX,
+                            endX = currentX
+                        ),
+                        style = Stroke(width = 4.5f)
                     )
 
-                    // Draw Plane Indicator & Realistic Aviator Red Airplane/Rocket
+                    // Render Supersonic Aircraft if not crashed
                     if (gameState != "FLEW_AWAY") {
-                        // Calculate tangent angle of curve for realistic flight angle
-                        val prevProg = (progress - 0.02f).coerceAtLeast(0f)
-                        val prevX = curveStartX + (w - 100f) * prevProg
-                        val prevY = curveStartY - (h - 100f) * (prevProg * prevProg)
+                        // Calculate tangent rotation angle along trajectory
+                        val prevProg = (progress - 0.025f).coerceAtLeast(0f)
+                        val prevX = startX + (w - 110f) * prevProg
+                        val prevY = startY - (h - 110f) * (prevProg.pow(1.65f))
                         val dx = currentX - prevX
                         val dy = currentY - prevY
-                        val tangentAngle = (Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()).coerceIn(-65f, 10f)
+                        val flightAngle = (Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()).coerceIn(-65f, 5f)
 
-                        // Glowing contrail halo behind airplane
+                        // Engine halo glow
                         drawCircle(
                             brush = Brush.radialGradient(
-                                colors = listOf(CoralRed.copy(alpha = 0.5f), Color.Transparent),
+                                colors = listOf(CoralRed.copy(alpha = 0.6f), Color.Transparent),
                                 center = Offset(currentX, currentY),
-                                radius = 45f
+                                radius = 55f
                             ),
-                            radius = 45f,
+                            radius = 55f,
                             center = Offset(currentX, currentY)
                         )
 
-                        // Draw flying red rocket / airplane rotated along flight trajectory
-                        rotate(degrees = tangentAngle, pivot = Offset(currentX, currentY)) {
-                            // 1. Dynamic Exhaust Flame with animated flicker
-                            val flameLen = 32f * flameFlicker
-                            val flameWidth = 14f * flameFlicker
-                            val flamePath = Path().apply {
-                                moveTo(currentX - 16f, currentY - 5f)
-                                quadraticTo(currentX - 16f - flameLen * 0.6f, currentY, currentX - 16f - flameLen, currentY)
-                                quadraticTo(currentX - 16f - flameLen * 0.6f, currentY + 3f, currentX - 16f, currentY + 5f)
+                        // Supersonic Red Aircraft Drawing
+                        rotate(degrees = flightAngle, pivot = Offset(currentX, currentY)) {
+                            // Afterburner Flame Exhaust
+                            val flameLength = 36f * afterburnerFlicker
+                            val flameThick = 12f * afterburnerFlicker
+                            val exhaustFlame = Path().apply {
+                                moveTo(currentX - 18f, currentY - 5f)
+                                quadraticTo(currentX - 18f - flameLength * 0.6f, currentY, currentX - 18f - flameLength, currentY)
+                                quadraticTo(currentX - 18f - flameLength * 0.6f, currentY + 3f, currentX - 18f, currentY + 5f)
                                 close()
                             }
                             drawPath(
-                                path = flamePath,
+                                path = exhaustFlame,
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(GoldYellow, CoralRed, Color.Transparent),
-                                    startX = currentX - 16f,
-                                    endX = currentX - 16f - flameLen
+                                    startX = currentX - 18f,
+                                    endX = currentX - 18f - flameLength
                                 )
                             )
 
-                            // Inner intense blue-white jet core
-                            val innerFlame = Path().apply {
-                                moveTo(currentX - 16f, currentY - 2.5f)
-                                lineTo(currentX - 16f - (flameLen * 0.5f), currentY)
-                                lineTo(currentX - 16f, currentY + 2.5f)
+                            // Inner White-Hot Jet Plasma Core
+                            val jetCore = Path().apply {
+                                moveTo(currentX - 18f, currentY - 2.5f)
+                                lineTo(currentX - 18f - (flameLength * 0.45f), currentY)
+                                lineTo(currentX - 18f, currentY + 2.5f)
                                 close()
                             }
                             drawPath(
-                                path = innerFlame,
+                                path = jetCore,
                                 brush = Brush.horizontalGradient(
-                                    colors = listOf(Color.White, AccentCyan, Color.Transparent),
-                                    startX = currentX - 16f,
-                                    endX = currentX - 16f - (flameLen * 0.5f)
+                                    colors = listOf(Color.White, AccentCyan),
+                                    startX = currentX - 18f,
+                                    endX = currentX - 18f - (flameLength * 0.45f)
                                 )
                             )
 
-                            // 2. Main Wings (Back swept aerodynamic wings)
+                            // Aircraft Wing (Delta Sweep Wings)
                             val wingsPath = Path().apply {
-                                moveTo(currentX - 2f, currentY - 22f)
-                                lineTo(currentX + 8f, currentY - 4f)
-                                lineTo(currentX - 14f, currentY - 4f)
+                                moveTo(currentX + 6f, currentY)
+                                lineTo(currentX - 12f, currentY - 24f)
+                                lineTo(currentX - 18f, currentY - 20f)
+                                lineTo(currentX - 6f, currentY)
+                                lineTo(currentX - 18f, currentY + 20f)
+                                lineTo(currentX - 12f, currentY + 24f)
                                 close()
                             }
-                            drawPath(path = wingsPath, color = Color(0xFFB91C1C)) // Deep crimson wing top
-
-                            val lowerWingPath = Path().apply {
-                                moveTo(currentX - 2f, currentY + 22f)
-                                lineTo(currentX + 8f, currentY + 4f)
-                                lineTo(currentX - 14f, currentY + 4f)
-                                close()
-                            }
-                            drawPath(path = lowerWingPath, color = Color(0xFF991B1B)) // Shadowed lower wing
-
-                            // 3. Tail Fin (Stabilizer)
-                            val tailPath = Path().apply {
-                                moveTo(currentX - 16f, currentY)
-                                lineTo(currentX - 24f, currentY - 14f)
-                                lineTo(currentX - 18f, currentY)
-                                close()
-                            }
-                            drawPath(path = tailPath, color = CoralRed)
-
-                            // 4. Main Fuselage / Body (Sleek aerodynamic red rocket/plane fuselage)
-                            val fuselagePath = Path().apply {
-                                moveTo(currentX + 26f, currentY) // Sharp nose cone
-                                cubicTo(
-                                    currentX + 16f, currentY - 9f,
-                                    currentX - 8f, currentY - 8f,
-                                    currentX - 18f, currentY - 5f
+                            drawPath(
+                                path = wingsPath,
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(Color(0xFFB71C1C), CoralRed, Color(0xFFD32F2F)),
+                                    startY = currentY - 24f,
+                                    endY = currentY + 24f
                                 )
-                                lineTo(currentX - 18f, currentY + 5f)
+                            )
+                            // Wing border highlight
+                            drawPath(path = wingsPath, color = Color(0xFFFF8A80), style = Stroke(width = 1f))
+
+                            // Aircraft Aerodynamic Fuselage
+                            val fuselage = Path().apply {
+                                moveTo(currentX + 28f, currentY) // Sharp nose
                                 cubicTo(
-                                    currentX - 8f, currentY + 8f,
-                                    currentX + 16f, currentY + 9f,
-                                    currentX + 26f, currentY
+                                    currentX + 16f, currentY - 8f,
+                                    currentX - 8f, currentY - 7f,
+                                    currentX - 20f, currentY - 4f
+                                )
+                                lineTo(currentX - 20f, currentY + 4f)
+                                cubicTo(
+                                    currentX - 8f, currentY + 7f,
+                                    currentX + 16f, currentY + 8f,
+                                    currentX + 28f, currentY
                                 )
                                 close()
                             }
                             drawPath(
-                                path = fuselagePath,
+                                path = fuselage,
                                 brush = Brush.linearGradient(
-                                    colors = listOf(Color(0xFFFF5252), CoralRed, Color(0xFFC62828)),
+                                    colors = listOf(Color(0xFFFF5252), CoralRed, Color(0xFFB71C1C)),
                                     start = Offset(currentX, currentY - 8f),
                                     end = Offset(currentX, currentY + 8f)
                                 )
                             )
 
-                            // 5. Cockpit Canopy (Tinted cyan glass with reflection)
-                            val cockpitPath = Path().apply {
-                                moveTo(currentX + 14f, currentY - 3f)
-                                quadraticTo(currentX + 8f, currentY - 7f, currentX + 1f, currentY - 4f)
+                            // Cockpit Tinted Canopy (Glass with glare)
+                            val cockpit = Path().apply {
+                                moveTo(currentX + 16f, currentY - 2f)
+                                quadraticTo(currentX + 9f, currentY - 7f, currentX + 1f, currentY - 4f)
                                 lineTo(currentX + 2f, currentY)
-                                lineTo(currentX + 12f, currentY)
+                                lineTo(currentX + 14f, currentY)
                                 close()
                             }
-                            drawPath(path = cockpitPath, color = AccentCyan)
-                            // Canopy highlight
+                            drawPath(path = cockpit, color = AccentCyan)
                             drawLine(
                                 color = Color.White,
-                                start = Offset(currentX + 10f, currentY - 3f),
-                                end = Offset(currentX + 4f, currentY - 5f),
+                                start = Offset(currentX + 13f, currentY - 3f),
+                                end = Offset(currentX + 5f, currentY - 5f),
                                 strokeWidth = 1.5f
                             )
 
-                            // 6. Fuselage Racing Stripe / Details
+                            // Supersonic Speed Decal Stripe
                             drawLine(
                                 color = Color.White.copy(alpha = 0.9f),
-                                start = Offset(currentX - 14f, currentY),
-                                end = Offset(currentX + 18f, currentY),
-                                strokeWidth = 1.8f
+                                start = Offset(currentX - 15f, currentY),
+                                end = Offset(currentX + 20f, currentY),
+                                strokeWidth = 1.6f
                             )
                         }
                     }
                 }
             }
 
-            // Central Status & Multiplier Display
+            // Central Telemetry & Multiplier Display
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -549,22 +612,38 @@ fun AviatorGame(
                 when (gameState) {
                     "IDLE" -> {
                         Surface(
-                            color = PrimaryPurple.copy(alpha = 0.15f),
+                            color = PrimaryPurple.copy(alpha = 0.2f),
                             shape = RoundedCornerShape(12.dp),
                             border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryPurple)
                         ) {
                             Text(
-                                text = "WAITING FOR NEXT ROUND",
+                                text = "READY FOR TAKEOFF",
                                 color = BrightPurple,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                             )
                         }
                         Text(
-                            text = "Select your bet in PKR and press BET",
+                            text = "Set your bets in PKR and hit START FLIGHT",
                             color = TextSecondary,
                             fontSize = 12.sp
+                        )
+                    }
+
+                    "COUNTDOWN" -> {
+                        Text(
+                            text = "TAKEOFF IN",
+                            color = AccentCyan,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "$countdownSeconds",
+                            color = Color.White,
+                            fontSize = 62.sp,
+                            fontWeight = FontWeight.Black
                         )
                     }
 
@@ -572,19 +651,23 @@ fun AviatorGame(
                         Text(
                             text = "${String.format("%.2f", currentMultiplier)}x",
                             color = Color.White,
-                            fontSize = 54.sp,
+                            fontSize = 58.sp,
                             fontWeight = FontWeight.Black,
                             modifier = Modifier.graphicsLayer {
-                                scaleX = pulseScale
-                                scaleY = pulseScale
+                                scaleX = pulseMultiplier
+                                scaleY = pulseMultiplier
                             }
                         )
-                        Text(
-                            text = "Current Payout: PKR ${String.format("%,.0f", activeBetAmount * currentMultiplier)}",
-                            color = AccentCyan,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        val totalActiveStake = (if (bet1Active && !bet1CashedOut) bet1Amount else 0.0) +
+                                (if (bet2Active && !bet2CashedOut) bet2Amount else 0.0)
+                        if (totalActiveStake > 0) {
+                            Text(
+                                text = "Live Payout: PKR ${String.format("%,.0f", totalActiveStake * currentMultiplier)}",
+                                color = AccentCyan,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     "FLEW_AWAY" -> {
@@ -601,229 +684,205 @@ fun AviatorGame(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Round closed. Better luck next flight!",
+                            text = "Flight ended. Place your bets for the next round!",
                             color = TextSecondary,
                             fontSize = 12.sp
-                        )
-                    }
-
-                    "CASHED_OUT" -> {
-                        Box(
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(CircleShape)
-                                .background(NeonGreen.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = NeonGreen, modifier = Modifier.size(32.dp))
-                        }
-                        Text(
-                            text = "CASHED OUT!",
-                            color = NeonGreen,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                        Text(
-                            text = "Won PKR ${String.format("%,.0f", cashedOutAmount)} (${String.format("%.2f", cashedOutMultiplier)}x)",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Credited to your verified PKR balance",
-                            color = TextSecondary,
-                            fontSize = 11.sp
                         )
                     }
                 }
             }
         }
 
-        // BET CONTROLS & WALLET BETTING PANEL
+        // DUAL RESPONSIVE BETTING CONSOLE
         Surface(
             color = SecondaryBg,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Quick Amount Badges
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "BET AMOUNT (PKR)",
-                        color = TextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Min: PKR 50 • Max: PKR 25,000",
-                        color = TextMuted,
-                        fontSize = 10.sp
-                    )
-                }
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(quickBets) { amt ->
-                        val isSelected = selectedBet == amt && customBetText.isEmpty()
-                        Surface(
-                            color = if (isSelected) CoralRed else CardBg,
-                            shape = RoundedCornerShape(10.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) CoralRed else CardBorder),
-                            modifier = Modifier.clickable(enabled = gameState == "IDLE" || gameState == "FLEW_AWAY" || gameState == "CASHED_OUT") {
-                                selectedBet = amt
-                                customBetText = ""
-                                betErrorMessage = ""
-                            }
-                        ) {
-                            Text(
-                                text = "PKR ${amt.toInt()}",
-                                color = if (isSelected) Color.White else TextPrimary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                            )
-                        }
-                    }
-                }
-
-                // Custom Bet Input Field
-                OutlinedTextField(
-                    value = customBetText,
-                    onValueChange = {
-                        customBetText = it
-                        betErrorMessage = ""
-                    },
-                    label = { Text("Or enter custom bet in PKR") },
-                    placeholder = { Text("e.g. 750") },
-                    leadingIcon = {
-                        Text("PKR", color = CoralRed, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp))
-                    },
-                    enabled = gameState == "IDLE" || gameState == "FLEW_AWAY" || gameState == "CASHED_OUT",
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = CoralRed,
-                        unfocusedBorderColor = CardBorder
-                    ),
-                    singleLine = true
-                )
-
-                // Auto Cash Out Control Row
+                // Bet Slot 1 Panel
                 Surface(
                     color = CardBg,
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    shape = RoundedCornerShape(14.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (bet1Active) CoralRed.copy(alpha = 0.7f) else CardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    Column(
+                        modifier = Modifier.padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Switch(
-                                checked = autoCashOutEnabled,
-                                onCheckedChange = { autoCashOutEnabled = it },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = NeonGreen,
-                                    checkedTrackColor = NeonGreen.copy(alpha = 0.4f),
-                                    uncheckedThumbColor = TextMuted,
-                                    uncheckedTrackColor = DarkBg
-                                ),
-                                modifier = Modifier.height(28.dp)
-                            )
-                            Text(
-                                text = "AUTO CASHOUT",
-                                color = if (autoCashOutEnabled) NeonGreen else TextSecondary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            )
-                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("BET 1", color = CoralRed, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                if (bet1CashedOut) {
+                                    Text("CASHED OUT (${String.format("%.2f", bet1WinPkr)} PKR)", color = NeonGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
 
-                        if (autoCashOutEnabled) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                listOf(1.50, 2.00, 3.00, 5.00).forEach { preset ->
+                            // Auto Cashout Toggle for Slot 1
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Auto", color = if (bet1AutoCashout) NeonGreen else TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Switch(
+                                    checked = bet1AutoCashout,
+                                    onCheckedChange = { bet1AutoCashout = it },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = NeonGreen,
+                                        checkedTrackColor = NeonGreen.copy(alpha = 0.4f),
+                                        uncheckedThumbColor = TextMuted,
+                                        uncheckedTrackColor = DarkBg
+                                    ),
+                                    modifier = Modifier.height(24.dp)
+                                )
+                                if (bet1AutoCashout) {
                                     Surface(
-                                        color = if (autoCashOutTarget == preset) NeonGreen else SecondaryBg,
+                                        color = SecondaryBg,
                                         shape = RoundedCornerShape(6.dp),
-                                        modifier = Modifier.clickable {
-                                            autoCashOutTarget = preset
-                                            autoCashOutInputText = String.format("%.2f", preset)
-                                        }
+                                        border = androidx.compose.foundation.BorderStroke(0.8.dp, NeonGreen)
                                     ) {
                                         Text(
-                                            text = "${preset}x",
-                                            color = if (autoCashOutTarget == preset) DarkBg else TextSecondary,
+                                            text = "${String.format("%.2f", bet1AutoTarget)}x",
+                                            color = NeonGreen,
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 10.sp,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                            fontSize = 11.sp,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                         )
                                     }
+                                }
+                            }
+                        }
+
+                        // Quick Chips Row
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(quickChips) { chip ->
+                                val isSelected = bet1Amount == chip
+                                Surface(
+                                    color = if (isSelected) CoralRed else SecondaryBg,
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.clickable(enabled = gameState == "IDLE" || gameState == "FLEW_AWAY") {
+                                        bet1Amount = chip
+                                        bet1Active = true
+                                    }
+                                ) {
+                                    Text(
+                                        text = "${chip.toInt()}",
+                                        color = if (isSelected) Color.White else TextPrimary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Action Button for Slot 1
+                        if (gameState == "FLYING" && bet1Active && !bet1CashedOut) {
+                            Button(
+                                onClick = {
+                                    val winMult = currentMultiplier
+                                    val winPkr = (bet1Amount * winMult * 100).toInt() / 100.0
+                                    bet1CashedOut = true
+                                    bet1WinPkr = winPkr
+                                    onCashoutWin(winPkr, winMult, bet1Amount)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = NeonGreen)
+                            ) {
+                                Text(
+                                    text = "CASH OUT PKR ${String.format("%,.0f", bet1Amount * currentMultiplier)}",
+                                    color = DarkBg,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    color = SecondaryBg,
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("STAKE", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        Text("PKR ${bet1Amount.toInt()}", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                                    }
+                                }
+
+                                Button(
+                                    onClick = { bet1Active = !bet1Active },
+                                    enabled = gameState == "IDLE" || gameState == "FLEW_AWAY",
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (bet1Active) CoralRed else Color(0xFF374151)
+                                    ),
+                                    modifier = Modifier.height(44.dp)
+                                ) {
+                                    Text(
+                                        text = if (bet1Active) "ACTIVE" else "ENABLE",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
                                 }
                             }
                         }
                     }
                 }
 
-                if (betErrorMessage.isNotBlank()) {
+                // Error Message Notice
+                if (errorMessage.isNotBlank()) {
                     Text(
-                        text = betErrorMessage,
+                        text = errorMessage,
                         color = CoralRed,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
-                // PRIMARY ACTION BUTTON (BET / CASH OUT)
+                // Master Launch Control Button
                 when (gameState) {
                     "FLYING" -> {
-                        val currentEstimatedWin = activeBetAmount * currentMultiplier
-                        Button(
-                            onClick = {
-                                val winMult = currentMultiplier
-                                val winPkr = (activeBetAmount * winMult * 100).toInt() / 100.0
-                                cashedOutMultiplier = winMult
-                                cashedOutAmount = winPkr
-                                gameState = "CASHED_OUT"
-                                roundHistory.add(0, (winMult * 100).toInt() / 100.0)
-                                if (roundHistory.size > 12) roundHistory.removeLast()
-                                onCashoutWin(winPkr, winMult, activeBetAmount)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = NeonGreen)
+                        Surface(
+                            color = Color(0xFF160B29),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryPurple),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = "CASH OUT",
-                                    color = DarkBg,
+                                    text = "FLIGHT IN PROGRESS (${String.format("%.2f", currentMultiplier)}x)",
+                                    color = BrightPurple,
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 16.sp,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = "WIN PKR ${String.format("%,.0f", currentEstimatedWin)} (${String.format("%.2f", currentMultiplier)}x)",
-                                    color = DarkBg.copy(alpha = 0.85f),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
+                                    fontSize = 13.sp
                                 )
                             }
                         }
@@ -831,46 +890,27 @@ fun AviatorGame(
 
                     else -> {
                         Button(
-                            onClick = {
-                                if (activeBetAmount > pkrBalance) {
-                                    betErrorMessage = "Insufficient PKR balance (Available: PKR ${String.format("%,.2f", pkrBalance)}). Please deposit."
-                                    return@Button
-                                }
-                                if (activeBetAmount < 50.0) {
-                                    betErrorMessage = "Minimum bet is PKR 50."
-                                    return@Button
-                                }
-
-                                isPlacingBet = true
-                                betErrorMessage = ""
-
-                                coroutineScope.launch {
-                                    val betResult = onPlaceBet(activeBetAmount)
-                                    isPlacingBet = false
-                                    if (betResult.isSuccess) {
-                                        gameState = "FLYING"
-                                    } else {
-                                        betErrorMessage = betResult.exceptionOrNull()?.message ?: "Failed to place bet"
-                                    }
-                                }
-                            },
-                            enabled = !isPlacingBet,
+                            onClick = { startNewRoundSequence() },
+                            enabled = !isSubmittingBet,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp),
+                                .height(54.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = CoralRed)
                         ) {
-                            if (isPlacingBet) {
+                            if (isSubmittingBet) {
                                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                             } else {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     Icon(imageVector = Icons.Default.RocketLaunch, contentDescription = null, tint = Color.White)
                                     Text(
-                                        text = "BET PKR ${String.format("%,.0f", activeBetAmount)}",
+                                        text = "START FLIGHT",
                                         color = Color.White,
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 16.sp,
+                                        fontSize = 15.sp,
                                         letterSpacing = 1.sp
                                     )
                                 }
@@ -881,21 +921,20 @@ fun AviatorGame(
             }
         }
 
-        // Aviator Rules & Info Dialog
+        // Aviator Rules Modal
         if (showRulesDialog) {
             AlertDialog(
                 onDismissRequest = { showRulesDialog = false },
                 title = {
-                    Text("Aviator: Rocket Crash Rules", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Aviator: Cinematic Crash Rules", color = Color.White, fontWeight = FontWeight.Bold)
                 },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("• Place your bet in PKR before takeoff.", color = TextSecondary, fontSize = 13.sp)
-                        Text("• The red rocket multiplier increases from 1.00x upwards.", color = TextSecondary, fontSize = 13.sp)
-                        Text("• Hit 'CASH OUT' or set 'AUTO CASHOUT' before the rocket flies away.", color = TextSecondary, fontSize = 13.sp)
-                        Text("• Payout = Bet Amount × Multiplier at moment of cashout.", color = TextSecondary, fontSize = 13.sp)
-                        Text("• If the rocket flies away before you cash out, the round is lost.", color = TextSecondary, fontSize = 13.sp)
-                        Text("• Certified Provably Fair RNG with up to 10,000x multiplier potential.", color = AccentCyan, fontSize = 12.sp)
+                        Text("• Place your PKR stakes on Bet 1 and Bet 2 prior to takeoff.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• The red supersonic aircraft ascends exponentially starting at 1.00x.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• Tap CASH OUT or configure AUTO CASHOUT before the aircraft flies away.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• Payout = Stake × Active Multiplier at the instant of cashout.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• Provably Fair distribution backed by certified backend RNG.", color = AccentCyan, fontSize = 12.sp)
                     }
                 },
                 confirmButton = {

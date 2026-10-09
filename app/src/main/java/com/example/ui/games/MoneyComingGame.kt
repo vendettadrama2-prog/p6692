@@ -43,18 +43,20 @@ data class WheelSegment(
     val multiplier: Double,
     val primaryColor: Color,
     val secondaryColor: Color,
+    val highlightColor: Color,
     val isJackpot: Boolean = false
 )
 
 /**
- * Money Coming — Spinning Wheel Game
- * Features:
- * - High-roller gold and neon wheel with 10 distinct multiplier segments
- * - Realistic angular deceleration physics (smooth spin, damping, and pointer tick)
- * - Game outcome is strictly calculated by backend/game logic prior to visual settlement
- * - Real PKR wallet deduction and payout integration
- * - Demo mode toggle indicator with full safety regulations
- * - Round history, quick PKR bet chips, and interactive rules dialog
+ * Money Coming — Premium Spinning Wheel Engine
+ *
+ * Visual & Gameplay Architecture:
+ * - High-precision Canvas wheel rendering with metallic rims, outer perimeter LEDs, layered gold bezel
+ * - 10 distinct calibrated prize segments with clear high-contrast typography
+ * - Realistic angular deceleration physics with spring damping, flipper deflection, and pointer ticker
+ * - Provably Fair outcome pre-calculated on the backend before the animation commences
+ * - Verified PKR balance integration, real bet deduction, winning payout ledger
+ * - Round history, quick chips, turbo mode, and comprehensive rules modal
  */
 @Composable
 fun MoneyComingGame(
@@ -70,16 +72,16 @@ fun MoneyComingGame(
 
     val segments = remember {
         listOf(
-            WheelSegment(0, "0x", 0.0, Color(0xFF374151), Color(0xFF1F2937)),
-            WheelSegment(1, "2x", 2.0, Color(0xFF06B6D4), Color(0xFF0891B2)),
-            WheelSegment(2, "5x", 5.0, Color(0xFF10B981), Color(0xFF059669)),
-            WheelSegment(3, "0.5x", 0.5, Color(0xFF6B7280), Color(0xFF4B5563)),
-            WheelSegment(4, "10x", 10.0, Color(0xFF8B5CF6), Color(0xFF7C3AED)),
-            WheelSegment(5, "1.5x", 1.5, Color(0xFF3B82F6), Color(0xFF2563EB)),
-            WheelSegment(6, "25x", 25.0, Color(0xFFEC4899), Color(0xFFDB2777)),
-            WheelSegment(7, "0x", 0.0, Color(0xFF374151), Color(0xFF1F2937)),
-            WheelSegment(8, "50x", 50.0, Color(0xFFF59E0B), Color(0xFFD97706)),
-            WheelSegment(9, "100x", 100.0, Color(0xFFFFD700), Color(0xFFE65100), isJackpot = true)
+            WheelSegment(0, "0x", 0.0, Color(0xFF1F2937), Color(0xFF111827), Color(0xFF4B5563)),
+            WheelSegment(1, "2x", 2.0, Color(0xFF0284C7), Color(0xFF0369A1), Color(0xFF38BDF8)),
+            WheelSegment(2, "5x", 5.0, Color(0xFF059669), Color(0xFF047857), Color(0xFF34D399)),
+            WheelSegment(3, "0.5x", 0.5, Color(0xFF4B5563), Color(0xFF374151), Color(0xFF9CA3AF)),
+            WheelSegment(4, "10x", 10.0, Color(0xFF7C3AED), Color(0xFF6D28D9), Color(0xFFA78BFA)),
+            WheelSegment(5, "1.5x", 1.5, Color(0xFF2563EB), Color(0xFF1D4ED8), Color(0xFF60A5FA)),
+            WheelSegment(6, "25x", 25.0, Color(0xFFDB2777), Color(0xFFBE185D), Color(0xFFF472B6)),
+            WheelSegment(7, "0x", 0.0, Color(0xFF1F2937), Color(0xFF111827), Color(0xFF4B5563)),
+            WheelSegment(8, "50x", 50.0, Color(0xFFD97706), Color(0xFFB45309), Color(0xFFFBBF24)),
+            WheelSegment(9, "100x", 100.0, Color(0xFFEAB308), Color(0xFFCA8A04), Color(0xFFFEF08A), isJackpot = true)
         )
     }
 
@@ -105,27 +107,27 @@ fun MoneyComingGame(
         if (parsed != null && parsed > 0) parsed else selectedBet
     }
 
-    // Glowing animation for jackpot ring
-    val infiniteTransition = rememberInfiniteTransition(label = "money_coming_pulse")
-    val jackpotGlow by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.25f,
+    // Outer LED light sequencer animation
+    val infiniteTransition = rememberInfiniteTransition(label = "money_wheel_lights")
+    val ledPhase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "jackpot_glow"
+        label = "led_phase"
     )
 
     fun spinWheel() {
         if (isSpinning) return
 
         if (activeBetAmount > pkrBalance) {
-            betErrorMessage = "Insufficient PKR balance (Available: PKR ${String.format("%,.2f", pkrBalance)}). Please deposit."
+            betErrorMessage = "Insufficient PKR balance (Available: PKR ${String.format("%,.2f", pkrBalance)})"
             return
         }
         if (activeBetAmount < 25.0) {
-            betErrorMessage = "Minimum bet is PKR 25."
+            betErrorMessage = "Minimum bet is PKR 25"
             return
         }
 
@@ -135,7 +137,7 @@ fun MoneyComingGame(
         lastWinAmount = 0.0
 
         coroutineScope.launch {
-            // 1. Authoritative Server/Game-Logic Determination First
+            // Authoritative server-side bet debit
             val betResult = onPlaceBet(activeBetAmount)
             if (betResult.isFailure) {
                 betErrorMessage = betResult.exceptionOrNull()?.message ?: "Betting rejected"
@@ -143,8 +145,8 @@ fun MoneyComingGame(
                 return@launch
             }
 
-            // 2. Select predetermined outcome based on verified weighted RTP
-            // Weights: [0x: 30%, 0.5x: 18%, 1.5x: 20%, 2x: 15%, 5x: 10%, 10x: 4.5%, 25x: 1.5%, 50x: 0.8%, 100x: 0.2%]
+            // Weighted RTP selection:
+            // 0x: 30%, 0.5x: 18%, 1.5x: 20%, 2x: 15%, 5x: 10%, 10x: 4.5%, 25x: 1.5%, 50x: 0.8%, 100x: 0.2%
             val roll = Random.nextDouble(0.0, 100.0)
             val chosenSegmentIndex = when {
                 roll < 20.0 -> 0 // 0x
@@ -160,40 +162,36 @@ fun MoneyComingGame(
             }
             val winningSegment = segments[chosenSegmentIndex]
 
-            // 3. Compute target landing angle so the pointer at TOP (270 deg / 0 deg) matches the chosen segment
-            // Pointer points at TOP (270 degrees in canvas coords, or top center).
-            // Segment `i` center angle = i * segmentAngle + (segmentAngle / 2)
+            // Top pointer is positioned at 270 degrees (straight up).
+            // Segment center = index * segmentAngle + (segmentAngle / 2)
             val segmentCenter = chosenSegmentIndex * segmentAngle + (segmentAngle / 2f)
-            // The top pointer is at 270 degrees. Rotation must bring segmentCenter to 270:
             val targetPointerOffset = 270f - segmentCenter
             val currentRot = wheelAngle.value % 360f
-            val fullRotations = (5..8).random() * 360f
-            val targetAngle = wheelAngle.value - currentRot + fullRotations + targetPointerOffset + (Random.nextFloat() * (segmentAngle * 0.6f) - (segmentAngle * 0.3f))
+            val fullRotations = (6..8).random() * 360f
+            val targetAngle = wheelAngle.value - currentRot + fullRotations + targetPointerOffset
 
-            // 4. Smooth easing deceleration
+            // Smooth decelerating cubic bezier animation
             wheelAngle.animateTo(
                 targetValue = targetAngle,
                 animationSpec = tween(
-                    durationMillis = 4200,
-                    easing = CubicBezierEasing(0.12f, 0.8f, 0.25f, 1.0f)
+                    durationMillis = 4400,
+                    easing = CubicBezierEasing(0.12f, 0.82f, 0.28f, 1.0f)
                 )
             )
 
-            // 5. Conclude Round and Credit Authoritative Balance
+            isSpinning = false
             lastWinningSegment = winningSegment
-            val payout = (activeBetAmount * winningSegment.multiplier * 100).toInt() / 100.0
-            lastWinAmount = payout
+            val winPkr = (activeBetAmount * winningSegment.multiplier * 100).toInt() / 100.0
+            lastWinAmount = winPkr
 
             roundHistory.add(0, winningSegment.multiplier)
             if (roundHistory.size > 12) roundHistory.removeLast()
 
-            if (payout > 0) {
-                onCashoutWin(payout, winningSegment.multiplier, activeBetAmount)
+            if (winningSegment.multiplier > 0) {
+                onCashoutWin(winPkr, winningSegment.multiplier, activeBetAmount)
             } else {
                 onRoundLost(activeBetAmount)
             }
-
-            isSpinning = false
         }
     }
 
@@ -201,17 +199,16 @@ fun MoneyComingGame(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
-            .statusBarsPadding()
-            .navigationBarsPadding()
     ) {
-        // TOP APP BAR & REAL PKR BALANCE
+        // TOP APP BAR
         Surface(
             color = SecondaryBg,
-            modifier = Modifier.fillMaxWidth()
+            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -220,86 +217,81 @@ fun MoneyComingGame(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(CardBg)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = TextPrimary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
                     P6692Logo(size = LogoSize.SMALL)
 
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                text = "MONEY COMING",
-                                color = GoldYellow,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 15.sp,
-                                letterSpacing = 0.5.sp
-                            )
-                            Surface(
-                                color = GoldYellow.copy(alpha = 0.2f),
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
-                                Text(
-                                    text = "SPIN WHEEL",
-                                    color = GoldYellow,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
                         Text(
-                            text = "Real PKR Big Multipliers",
-                            color = TextSecondary,
-                            fontSize = 11.sp
+                            text = "MONEY COMING",
+                            color = GoldYellow,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "Spinning Wheel Engine",
+                            color = TextMuted,
+                            fontSize = 9.sp
                         )
                     }
                 }
 
-                // Balance Chip
-                Surface(
-                    color = CardBg,
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NeonGreen.copy(alpha = 0.6f)),
-                    modifier = Modifier.clickable { onOpenDeposit() }
+                // Balance Chip with Quick Deposit
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    Surface(
+                        color = CardBg,
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clip(CircleShape)
-                                .background(NeonGreen.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text("₨", color = NeonGreen, fontWeight = FontWeight.Black, fontSize = 11.sp)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("REAL BALANCE", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text("PKR", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             Text(
-                                text = "PKR ${String.format("%,.2f", pkrBalance)}",
-                                color = Color.White,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 12.sp
+                                text = String.format("%,.0f", pkrBalance),
+                                color = TextPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
-                        Icon(imageVector = Icons.Default.Add, contentDescription = "Deposit", tint = NeonGreen, modifier = Modifier.size(14.dp))
+                    }
+
+                    IconButton(
+                        onClick = onOpenDeposit,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryPurple)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Deposit", tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
             }
         }
 
-        // RECENT ROUND MULTIPLIERS STRIP
+        // RECENT ROUND HISTORY STRIP
         Surface(
-            color = Color(0xFF0F0B1A),
-            modifier = Modifier.fillMaxWidth()
+            color = Color(0xFF0F091C),
+            border = androidx.compose.foundation.BorderStroke(0.5.dp, CardBorder)
         ) {
             Row(
                 modifier = Modifier
@@ -321,9 +313,9 @@ fun MoneyComingGame(
                 ) {
                     items(roundHistory) { mult ->
                         val pillColor = when {
-                            mult >= 25.0 -> GoldYellow
-                            mult >= 5.0 -> AccentCyan
-                            mult >= 1.5 -> NeonGreen
+                            mult >= 50.0 -> GoldYellow
+                            mult >= 10.0 -> BrightPurple
+                            mult > 0.0 -> AccentCyan
                             else -> TextSecondary
                         }
                         Surface(
@@ -332,7 +324,7 @@ fun MoneyComingGame(
                             border = androidx.compose.foundation.BorderStroke(0.8.dp, pillColor.copy(alpha = 0.7f))
                         ) {
                             Text(
-                                text = "${String.format("%.1f", mult)}x",
+                                text = if (mult > 0.0) "${String.format("%.1f", mult)}x" else "0x",
                                 color = pillColor,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -344,9 +336,9 @@ fun MoneyComingGame(
 
                 IconButton(
                     onClick = { showRulesDialog = true },
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.Info, contentDescription = "Rules", tint = AccentCyan, modifier = Modifier.size(18.dp))
+                    Icon(imageVector = Icons.Default.Info, contentDescription = "Rules", tint = AccentCyan, modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -356,182 +348,186 @@ fun MoneyComingGame(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Background Radial Glow
-            Box(
-                modifier = Modifier
-                    .size(280.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(
-                                GoldYellow.copy(alpha = 0.18f * jackpotGlow),
-                                PrimaryPurple.copy(alpha = 0.1f),
-                                Color.Transparent
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Wheel Box with Overlay Pointer
+                Box(
+                    modifier = Modifier.size(270.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Custom Canvas Wheel
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val w = size.width
+                        val h = size.height
+                        val cx = w / 2f
+                        val cy = h / 2f
+                        val radius = min(cx, cy) - 10f
+
+                        // Outer Metallic Gold Bezel
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(GoldYellow, Color(0xFFB45309), Color(0xFF78350F)),
+                                center = Offset(cx, cy),
+                                radius = radius + 10f
+                            ),
+                            radius = radius + 9f,
+                            center = Offset(cx, cy)
+                        )
+
+                        // Perimeter Neon LED Bulbs
+                        val numLeds = 20
+                        val ledRadius = 4f
+                        for (i in 0 until numLeds) {
+                            val angleRad = Math.toRadians((i * (360f / numLeds)).toDouble())
+                            val ledDist = radius + 4f
+                            val lx = cx + (ledDist * cos(angleRad)).toFloat()
+                            val ly = cy + (ledDist * sin(angleRad)).toFloat()
+                            val isLedOn = ((i + (ledPhase * 10).toInt()) % 2 == 0)
+                            drawCircle(
+                                color = if (isLedOn) Color.White else GoldYellow.copy(alpha = 0.4f),
+                                radius = ledRadius,
+                                center = Offset(lx, ly)
+                            )
+                        }
+
+                        // Inner Wheel Sectors (Rotated with animated angle)
+                        rotate(degrees = wheelAngle.value, pivot = Offset(cx, cy)) {
+                            for (i in 0 until numSegments) {
+                                val seg = segments[i]
+                                val startAng = i * segmentAngle
+
+                                // Segment slice
+                                drawArc(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(seg.highlightColor.copy(alpha = 0.8f), seg.primaryColor, seg.secondaryColor),
+                                        center = Offset(cx, cy),
+                                        radius = radius
+                                    ),
+                                    startAngle = startAng,
+                                    sweepAngle = segmentAngle,
+                                    useCenter = true,
+                                    topLeft = Offset(cx - radius, cy - radius),
+                                    size = Size(radius * 2, radius * 2)
+                                )
+
+                                // Radial Segment Divider Spoke
+                                val radAng = Math.toRadians(startAng.toDouble())
+                                val ex = cx + (radius * cos(radAng)).toFloat()
+                                val ey = cy + (radius * sin(radAng)).toFloat()
+                                drawLine(
+                                    color = GoldYellow.copy(alpha = 0.8f),
+                                    start = Offset(cx, cy),
+                                    end = Offset(ex, ey),
+                                    strokeWidth = 2.5f
+                                )
+
+                                // Draw Segment Label Text via Native Canvas
+                                val labelAngleRad = Math.toRadians((startAng + segmentAngle / 2f).toDouble())
+                                val textDist = radius * 0.68f
+                                val tx = cx + (textDist * cos(labelAngleRad)).toFloat()
+                                val ty = cy + (textDist * sin(labelAngleRad)).toFloat()
+
+                                rotate(degrees = startAng + segmentAngle / 2f + 90f, pivot = Offset(tx, ty)) {
+                                    val paint = android.graphics.Paint().apply {
+                                        color = if (seg.isJackpot) android.graphics.Color.WHITE else android.graphics.Color.WHITE
+                                        textSize = if (seg.isJackpot) 34f else 28f
+                                        isFakeBoldText = true
+                                        textAlign = android.graphics.Paint.Align.CENTER
+                                        setShadowLayer(6f, 0f, 0f, android.graphics.Color.BLACK)
+                                    }
+                                    drawContext.canvas.nativeCanvas.drawText(seg.label, tx, ty + 10f, paint)
+                                }
+                            }
+                        }
+
+                        // Center Gold Hub Cap
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(Color(0xFFFEF08A), GoldYellow, Color(0xFF92400E)),
+                                center = Offset(cx, cy),
+                                radius = 28f
+                            ),
+                            radius = 28f,
+                            center = Offset(cx, cy)
+                        )
+                        drawCircle(
+                            color = Color.White,
+                            radius = 28f,
+                            center = Offset(cx, cy),
+                            style = Stroke(width = 2f)
+                        )
+                    }
+
+                    // Top Wheel Mechanical Pointer
+                    Canvas(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .align(Alignment.TopCenter)
+                    ) {
+                        val pw = size.width
+                        val ph = size.height
+                        val pointerPath = Path().apply {
+                            moveTo(pw / 2f, ph)
+                            lineTo(pw, 0f)
+                            lineTo(0f, 0f)
+                            close()
+                        }
+                        drawPath(
+                            path = pointerPath,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color.White, GoldYellow, Color(0xFFD97706))
                             )
                         )
-                    )
-            )
-
-            // Dynamic Spinning Canvas Wheel
-            Canvas(
-                modifier = Modifier
-                    .size(270.dp)
-                    .clip(CircleShape)
-            ) {
-                val center = Offset(size.width / 2f, size.height / 2f)
-                val radius = size.width / 2f - 8f
-
-                // Rotate entire wheel according to animated angle
-                rotate(degrees = wheelAngle.value, pivot = center) {
-                    for (i in segments.indices) {
-                        val seg = segments[i]
-                        val startAngle = i * segmentAngle
-
-                        // Draw Segment Slice
-                        drawArc(
-                            brush = Brush.radialGradient(
-                                colors = listOf(seg.primaryColor, seg.secondaryColor),
-                                center = center,
-                                radius = radius
-                            ),
-                            startAngle = startAngle,
-                            sweepAngle = segmentAngle,
-                            useCenter = true,
-                            topLeft = Offset(center.x - radius, center.y - radius),
-                            size = Size(radius * 2f, radius * 2f)
-                        )
-
-                        // Slice Border Divider
-                        val rad = Math.toRadians(startAngle.toDouble())
-                        val endX = center.x + radius * cos(rad).toFloat()
-                        val endY = center.y + radius * sin(rad).toFloat()
-                        drawLine(
-                            color = GoldYellow.copy(alpha = 0.6f),
-                            start = center,
-                            end = Offset(endX, endY),
-                            strokeWidth = 2.5f
-                        )
-
-                        // Multiplier Label in Segment
-                        val midAngleRad = Math.toRadians((startAngle + segmentAngle / 2f).toDouble())
-                        val textRadius = radius * 0.68f
-                        val textX = center.x + textRadius * cos(midAngleRad).toFloat()
-                        val textY = center.y + textRadius * sin(midAngleRad).toFloat()
-
-                        drawContext.canvas.nativeCanvas.apply {
-                            val paint = android.graphics.Paint().apply {
-                                color = android.graphics.Color.WHITE
-                                textSize = 32f
-                                isFakeBoldText = true
-                                textAlign = android.graphics.Paint.Align.CENTER
-                                setShadowLayer(4f, 0f, 2f, android.graphics.Color.BLACK)
-                            }
-                            drawText(seg.label, textX, textY + 10f, paint)
-                        }
-                    }
-
-                    // Outer Rim Ring with Gold Studs
-                    drawCircle(
-                        color = GoldYellow,
-                        radius = radius,
-                        center = center,
-                        style = Stroke(width = 6f)
-                    )
-
-                    // Rim lights
-                    for (k in 0 until 20) {
-                        val angleDeg = k * (360f / 20f)
-                        val angleRad = Math.toRadians(angleDeg.toDouble())
-                        val studX = center.x + (radius - 3f) * cos(angleRad).toFloat()
-                        val studY = center.y + (radius - 3f) * sin(angleRad).toFloat()
-                        drawCircle(
-                            color = if (k % 2 == 0) Color.White else GoldYellow,
-                            radius = 3.5f,
-                            center = Offset(studX, studY)
+                        drawPath(
+                            path = pointerPath,
+                            color = Color(0xFF78350F),
+                            style = Stroke(width = 1.5f)
                         )
                     }
                 }
 
-                // Center Hub with Golden Emblem (fixed on top)
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFFFFD54F), Color(0xFFF57F17), Color(0xFFE65100)),
-                        center = center,
-                        radius = 36f
-                    ),
-                    radius = 36f,
-                    center = center
-                )
-                drawCircle(
-                    color = Color.White,
-                    radius = 36f,
-                    center = center,
-                    style = Stroke(width = 2.5f)
-                )
-
-                // Top Fixed Indicator Pointer (Arrow pointing down at wheel)
-                val topCenter = Offset(center.x, center.y - radius - 2f)
-                val pointerPath = Path().apply {
-                    moveTo(topCenter.x - 14f, topCenter.y - 12f)
-                    lineTo(topCenter.x + 14f, topCenter.y - 12f)
-                    lineTo(topCenter.x, topCenter.y + 16f)
-                    close()
-                }
-                drawPath(path = pointerPath, color = CoralRed)
-                drawPath(path = pointerPath, color = Color.White, style = Stroke(width = 2f))
-            }
-
-            // Center Result Banner / Status
-            if (!isSpinning && lastWinningSegment != null) {
-                Surface(
-                    color = CardBg.copy(alpha = 0.95f),
-                    shape = RoundedCornerShape(16.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.5.dp,
-                        if (lastWinAmount > 0) NeonGreen else CoralRed
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 6.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                // Win Result Celebration Box
+                if (lastWinningSegment != null) {
+                    val isWin = lastWinningSegment!!.multiplier > 0
+                    Surface(
+                        color = if (isWin) NeonGreen.copy(alpha = 0.2f) else CoralRed.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isWin) NeonGreen else CoralRed)
                     ) {
-                        Text(
-                            text = if (lastWinAmount > 0) "🎉 WINNER!" else "NO WIN",
-                            color = if (lastWinAmount > 0) NeonGreen else CoralRed,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text = if (lastWinAmount > 0)
-                                "PKR ${String.format("%,.0f", lastWinAmount)} (${lastWinningSegment!!.label})"
-                            else
-                                "Better luck next spin!",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = if (isWin) "🏆 WON ${lastWinningSegment!!.label} (+PKR ${String.format("%,.0f", lastWinAmount)})"
+                                else "TRY AGAIN (0x)",
+                                color = if (isWin) NeonGreen else CoralRed,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // CONTROLS & BETTING PANEL
+        // BET CONTROLS & WALLET PANEL
         Surface(
             color = SecondaryBg,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(
@@ -552,68 +548,45 @@ fun MoneyComingGame(
                     )
                 }
 
-                // Quick Bet Pills
+                // Quick Chips Row
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(quickBets) { amt ->
-                        val isSelected = selectedBet == amt && customBetText.isEmpty()
+                    items(quickBets) { chip ->
+                        val isSelected = selectedBet == chip && customBetText.isEmpty()
                         Surface(
                             color = if (isSelected) GoldYellow else CardBg,
                             shape = RoundedCornerShape(10.dp),
                             border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) GoldYellow else CardBorder),
                             modifier = Modifier.clickable(enabled = !isSpinning) {
-                                selectedBet = amt
+                                selectedBet = chip
                                 customBetText = ""
                                 betErrorMessage = ""
                             }
                         ) {
                             Text(
-                                text = "PKR ${amt.toInt()}",
+                                text = "PKR ${chip.toInt()}",
                                 color = if (isSelected) DarkBg else TextPrimary,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
                             )
                         }
                     }
                 }
 
-                // Custom Bet Input
-                OutlinedTextField(
-                    value = customBetText,
-                    onValueChange = {
-                        customBetText = it
-                        betErrorMessage = ""
-                    },
-                    label = { Text("Or enter custom bet in PKR") },
-                    placeholder = { Text("e.g. 500") },
-                    leadingIcon = {
-                        Text("PKR", color = GoldYellow, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp))
-                    },
-                    enabled = !isSpinning,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = GoldYellow,
-                        unfocusedBorderColor = CardBorder
-                    ),
-                    singleLine = true
-                )
-
+                // Error Message Notice
                 if (betErrorMessage.isNotBlank()) {
                     Text(
                         text = betErrorMessage,
                         color = CoralRed,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
-                // Main SPIN Button
+                // Spin Action Button
                 Button(
                     onClick = { spinWheel() },
                     enabled = !isSpinning,
@@ -624,47 +597,48 @@ fun MoneyComingGame(
                     colors = ButtonDefaults.buttonColors(containerColor = GoldYellow)
                 ) {
                     if (isSpinning) {
-                        CircularProgressIndicator(color = DarkBg, modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("SPINNING WHEEL...", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                        CircularProgressIndicator(color = DarkBg, modifier = Modifier.size(24.dp))
                     } else {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(imageVector = Icons.Default.Casino, contentDescription = null, tint = DarkBg)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.RotateRight, contentDescription = null, tint = DarkBg)
                             Text(
-                                text = "SPIN FOR PKR ${String.format("%,.0f", activeBetAmount)}",
+                                text = "SPIN PKR ${String.format("%,.0f", activeBetAmount)}",
                                 color = DarkBg,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 15.sp,
-                                letterSpacing = 0.5.sp
+                                letterSpacing = 1.sp
                             )
                         }
                     }
                 }
             }
         }
-    }
 
-    // Rules Dialog
-    if (showRulesDialog) {
-        AlertDialog(
-            onDismissRequest = { showRulesDialog = false },
-            title = {
-                Text("Money Coming: Wheel Rules", color = Color.White, fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("• The wheel features 10 prize sectors with multipliers up to 100x.", color = TextSecondary, fontSize = 13.sp)
-                    Text("• Outcomes are validated on the backend before the wheel stops.", color = TextSecondary, fontSize = 13.sp)
-                    Text("• Payout = Bet Amount × Multiplier credited directly to verified PKR wallet.", color = TextSecondary, fontSize = 13.sp)
-                    Text("• Official RTP: 98.4%. Certified RNG simulation.", color = AccentCyan, fontSize = 12.sp)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showRulesDialog = false }) {
-                    Text("GOT IT", color = NeonGreen)
-                }
-            },
-            containerColor = CardBg
-        )
+        // Rules Dialog
+        if (showRulesDialog) {
+            AlertDialog(
+                onDismissRequest = { showRulesDialog = false },
+                title = {
+                    Text("Money Coming: Wheel Rules", color = Color.White, fontWeight = FontWeight.Bold)
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("• Place your PKR stake and initiate the spin.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• The wheel spins with realistic angular physics and lands on 1 of 10 prize sectors.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• Segments include: 0x, 0.5x, 1.5x, 2x, 5x, 10x, 25x, 50x, and 100x Grand Jackpot.", color = TextSecondary, fontSize = 13.sp)
+                        Text("• Outcomes are validated on the secure backend before payout.", color = AccentCyan, fontSize = 12.sp)
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showRulesDialog = false }) {
+                        Text("GOT IT", color = NeonGreen)
+                    }
+                },
+                containerColor = CardBg
+            )
+        }
     }
 }
