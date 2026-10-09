@@ -364,13 +364,13 @@ fun HomeScreen(
             }
         }
 
-        // Featured Games Section
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Games Display Section (Category-filtered or All Games)
+        if (selectedCategory != "All") {
+            item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -378,9 +378,9 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(text = "🔥", fontSize = 16.sp)
+                        Text(text = "🎮", fontSize = 16.sp)
                         Text(
-                            text = "Featured Games",
+                            text = "$selectedCategory Games (${displayedGames.size})",
                             color = Color.White,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold
@@ -388,39 +388,151 @@ fun HomeScreen(
                     }
 
                     Text(
-                        text = "View All",
+                        text = "Show All",
                         color = AccentCyan,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { onViewAllGames() }
+                        modifier = Modifier.clickable { selectedCategory = "All" }
                     )
                 }
+            }
 
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+            items(displayedGames.chunked(2)) { pair ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(featuredGames) { game ->
+                    GameCard(
+                        game = pair[0],
+                        isFavorite = favoriteIds.contains(pair[0].id),
+                        onCardClick = { onGameClick(pair[0]) },
+                        onToggleFavorite = { onToggleFavorite(pair[0].id) },
+                        onPlayClick = { onPlayGame(pair[0]) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (pair.size > 1) {
                         GameCard(
-                            game = game,
-                            isFavorite = favoriteIds.contains(game.id),
-                            onCardClick = { onGameClick(game) },
-                            onToggleFavorite = { onToggleFavorite(game.id) },
-                            onPlayClick = { onPlayGame(game) },
-                            modifier = Modifier.width(160.dp)
+                            game = pair[1],
+                            isFavorite = favoriteIds.contains(pair[1].id),
+                            onCardClick = { onGameClick(pair[1]) },
+                            onToggleFavorite = { onToggleFavorite(pair[1].id) },
+                            onPlayClick = { onPlayGame(pair[1]) },
+                            modifier = Modifier.weight(1f)
                         )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
-        }
+        } else {
+            // Featured Games Section
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(text = "🔥", fontSize = 16.sp)
+                            Text(
+                                text = "Featured Games",
+                                color = Color.White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
 
-        // Popular Arcade Section
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "View All",
+                            color = AccentCyan,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { onViewAllGames() }
+                        )
+                    }
+
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(featuredGames) { game ->
+                            GameCard(
+                                game = game,
+                                isFavorite = favoriteIds.contains(game.id),
+                                onCardClick = { onGameClick(game) },
+                                onToggleFavorite = { onToggleFavorite(game.id) },
+                                onPlayClick = { onPlayGame(game) },
+                                modifier = Modifier.width(160.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Popular Arcade Section
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(text = "⚡", fontSize = 16.sp)
+                            Text(
+                                text = "Popular Right Now",
+                                color = Color.White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Text(
+                            text = "View All",
+                            color = AccentCyan,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { onViewAllGames() }
+                        )
+                    }
+
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(popularGames) { game ->
+                            GameCard(
+                                game = game,
+                                isFavorite = favoriteIds.contains(game.id),
+                                onCardClick = { onGameClick(game) },
+                                onToggleFavorite = { onToggleFavorite(game.id) },
+                                onPlayClick = { onPlayGame(game) },
+                                modifier = Modifier.width(160.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // All Playable Games Catalogue Grid
+            item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -428,9 +540,9 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(text = "⚡", fontSize = 16.sp)
+                        Text(text = "🕹️", fontSize = 16.sp)
                         Text(
-                            text = "Popular Right Now",
+                            text = "All Games (${displayedGames.size})",
                             color = Color.White,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold
@@ -438,27 +550,41 @@ fun HomeScreen(
                     }
 
                     Text(
-                        text = "View All",
+                        text = "Full Lobby",
                         color = AccentCyan,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable { onViewAllGames() }
                     )
                 }
+            }
 
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+            items(displayedGames.chunked(2)) { pair ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(popularGames) { game ->
+                    GameCard(
+                        game = pair[0],
+                        isFavorite = favoriteIds.contains(pair[0].id),
+                        onCardClick = { onGameClick(pair[0]) },
+                        onToggleFavorite = { onToggleFavorite(pair[0].id) },
+                        onPlayClick = { onPlayGame(pair[0]) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (pair.size > 1) {
                         GameCard(
-                            game = game,
-                            isFavorite = favoriteIds.contains(game.id),
-                            onCardClick = { onGameClick(game) },
-                            onToggleFavorite = { onToggleFavorite(game.id) },
-                            onPlayClick = { onPlayGame(game) },
-                            modifier = Modifier.width(160.dp)
+                            game = pair[1],
+                            isFavorite = favoriteIds.contains(pair[1].id),
+                            onCardClick = { onGameClick(pair[1]) },
+                            onToggleFavorite = { onToggleFavorite(pair[1].id) },
+                            onPlayClick = { onPlayGame(pair[1]) },
+                            modifier = Modifier.weight(1f)
                         )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }

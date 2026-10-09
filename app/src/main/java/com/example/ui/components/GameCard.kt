@@ -100,15 +100,17 @@ fun GameCard(
 
                 // Big Game Icon Silhouette
                 val emojiIcon = when (game.id) {
-                    "money_coming" -> "🎡"
-                    "fortune_gems" -> "💎"
+                    "money_coming", "spin", "spain", "spinning_wheel", "spin_wheel" -> "🎡"
+                    "fortune_gems", "fortune_gems_2" -> "💎"
                     "bubble_shooter" -> "🎯"
                     "candy_match" -> "🍬"
                     "fruit_merge" -> "🍉"
-                    "aviator" -> "✈️"
+                    "aviator", "rocket", "rocket_aviator" -> "🚀"
                     "mines" -> "💎"
-                    "plinko" -> "🔴"
+                    "plinko", "neon_plinko" -> "🔴"
                     "jelly" -> "🍓"
+                    "neon_spin" -> "🎰"
+                    "cyber_crash" -> "🚀"
                     else -> when (game.category) {
                         "Crash" -> "🚀"
                         "Slots" -> "🎰"

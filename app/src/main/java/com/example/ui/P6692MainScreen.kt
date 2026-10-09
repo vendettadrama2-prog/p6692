@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.data.*
 import com.example.ui.components.*
 import com.example.ui.games.*
 import com.example.ui.screens.*
@@ -50,9 +51,13 @@ fun P6692MainApp(
     val showNotificationsModal by viewModel.showNotificationsModal.collectAsStateWithLifecycle()
     val showDepositModal by viewModel.showDepositModal.collectAsStateWithLifecycle()
 
-    // Ensure games catalogue is always non-empty by combining active & all games fallback
+    // Ensure games catalogue is always instantly available, combining active & all games with canonical fallback
     val availableGames = remember(activeGames, allGames) {
-        if (activeGames.isNotEmpty()) activeGames else allGames
+        when {
+            activeGames.isNotEmpty() -> activeGames
+            allGames.isNotEmpty() -> allGames
+            else -> CANONICAL_GAMES
+        }
     }
 
     // Handle system back navigation
@@ -87,7 +92,7 @@ fun P6692MainApp(
                     onBack = { viewModel.exitGame() }
                 )
             }
-            "neon_spin" -> {
+            "neon_spin", "neon_slots", "slots_777" -> {
                 NeonSlotsGame(
                     pkrBalance = user?.pkrBalance ?: 25000.0,
                     soundEnabled = soundEnabled,
@@ -142,7 +147,7 @@ fun P6692MainApp(
                     onBack = { viewModel.exitGame() }
                 )
             }
-            "aviator", "aviator_game" -> {
+            "aviator", "aviator_game", "rocket", "rocket_aviator", "crash" -> {
                 AviatorGame(
                     pkrBalance = user?.pkrBalance ?: 25000.0,
                     soundEnabled = soundEnabled,
@@ -186,7 +191,7 @@ fun P6692MainApp(
                     onBack = { viewModel.exitGame() }
                 )
             }
-            "money_coming", "money_coming_game", "spinning_wheel" -> {
+            "money_coming", "money_coming_game", "spinning_wheel", "spin", "spain", "spin_wheel", "quantum_roulette" -> {
                 MoneyComingGame(
                     pkrBalance = user?.pkrBalance ?: 25000.0,
                     soundEnabled = soundEnabled,
