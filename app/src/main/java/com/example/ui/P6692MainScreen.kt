@@ -51,12 +51,29 @@ fun P6692MainApp(
     val showNotificationsModal by viewModel.showNotificationsModal.collectAsStateWithLifecycle()
     val showDepositModal by viewModel.showDepositModal.collectAsStateWithLifecycle()
 
-    // Ensure games catalogue is always instantly available, combining active & all games with canonical fallback
+    // Ensure games catalogue is always instantly available with all canonical games prioritized at the top
     val availableGames = remember(activeGames, allGames) {
-        when {
+        val dbGames = when {
             activeGames.isNotEmpty() -> activeGames
             allGames.isNotEmpty() -> allGames
-            else -> CANONICAL_GAMES
+            else -> emptyList()
+        }
+        if (dbGames.isEmpty()) {
+            CANONICAL_GAMES
+        } else {
+            val dbMap = dbGames.associateBy { it.id }
+            val merged = mutableListOf<GameEntity>()
+            // Always keep canonical games at the top in authoritative order
+            for (canonical in CANONICAL_GAMES) {
+                merged.add(dbMap[canonical.id] ?: canonical)
+            }
+            // Append any additional custom database games if any
+            for (g in dbGames) {
+                if (CANONICAL_GAMES.none { it.id == g.id }) {
+                    merged.add(g)
+                }
+            }
+            merged
         }
     }
 

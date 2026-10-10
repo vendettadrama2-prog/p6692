@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
         WithdrawalEntity::class,
         JazzCashConfigEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -103,15 +103,8 @@ abstract class AppDatabase : RoomDatabase() {
                 db.userDao().setPkrBalance("p6692_user_1", 25000.0)
             }
 
-            // 2. Seed / Upsert all canonical games to ensure all games (Fortune Gems 2, Spin Master Spain, Rocket 92 Aviator, etc.) exist and are enabled
-            for (game in CANONICAL_GAMES) {
-                val existing = db.gameDao().getGameById(game.id)
-                if (existing == null) {
-                    db.gameDao().insertGames(listOf(game))
-                } else {
-                    db.gameDao().setGameEnabled(game.id, true)
-                }
-            }
+            // 2. Seed / Upsert all canonical games (Car Racing, Ludo, Subway Runner, Piano Tiles, Fortune Gems 2, etc.)
+            db.gameDao().insertGames(CANONICAL_GAMES)
 
             // Seed Initial Favorites
             listOf(

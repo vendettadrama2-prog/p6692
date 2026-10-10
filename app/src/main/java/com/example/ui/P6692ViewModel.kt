@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.*
 import com.example.ui.components.NavScreen
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -80,6 +81,12 @@ class P6692ViewModel(application: Application) : AndroidViewModel(application) {
     var showNotificationsModal = MutableStateFlow(false)
     var showDepositModal = MutableStateFlow(false)
     var showWithdrawalModal = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            database.gameDao().insertGames(CANONICAL_GAMES)
+        }
+    }
 
     fun onNavigate(screen: NavScreen) {
         currentNavScreen.value = screen
