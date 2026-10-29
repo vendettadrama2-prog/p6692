@@ -7,12 +7,13 @@ import androidx.room.PrimaryKey
 data class UserEntity(
     @PrimaryKey val id: String = "p6692_user_1",
     val username: String = "CyberPlayer_77",
+    val mobileNumber: String = "03001234567",
     val email: String = "player@p6692.com",
     val avatarUrl: String = "",
-    val vipLevel: Int = 3, // VIP 1 - 7
-    val pkrBalance: Double = 25000.0, // Real PKR Wallet Balance (Default PKR 25,000)
-    val demoBalance: Double = 25000.0,
-    val rewardPoints: Int = 3420,
+    val vipLevel: Int = 1, // VIP 1 - 7
+    val pkrBalance: Double = 0.0, // Real PKR Wallet Balance (Starts strictly at PKR 0.00 in production)
+    val demoBalance: Double = 5000.0, // Initial DEMO balance: PKR 5,000 (DEMO BALANCE — NOT REAL MONEY)
+    val rewardPoints: Int = 500,
     val isBanned: Boolean = false,
     val role: String = "PLAYER", // PLAYER, ADMIN
     val soundEnabled: Boolean = true,
@@ -144,9 +145,26 @@ data class JazzCashConfigEntity(
     val merchantId: String = "MC895945",
     val apiPassword: String = "z84t9fx8c8",
     val integritySalt: String = "498z5u0th4",
+    val returnUrl: String = "https://api.p6692.com/api/jazzcash/callback",
     val environment: String = "PRODUCTION", // "PRODUCTION" or "SANDBOX"
     val epStoreId: String = "38914",
     val epHashKey: String = "ep_live_sec_9941a82f",
     val epAccountTitle: String = "P6692 Official Merchant",
     val updatedAt: Long = System.currentTimeMillis()
 )
+
+@Entity(tableName = "cryptoeze_config")
+data class CryptoEzeConfigEntity(
+    @PrimaryKey val id: String = "primary_cryptoeze",
+    val merchantId: String = "merch_8bbc74b534e28efb54a3de42",
+    val apiKey: String = "pk_live_1bbea1f4b9cab098a5189af471d580e9",
+    val secretKey: String = "sk_live_3860",
+    val webhookSecret: String = "whsec_4a6112",
+    val webhookUrl: String = "https://p6692.com/webhooks/cryptoeze",
+    val environment: String = "LIVE", // "SANDBOX" or "LIVE"
+    val defaultChannel: String = "JAZZCASH", // "JAZZCASH", "EASYPAISA", "USDT"
+    val settlementAccount: String = "03001234567",
+    val apiUrl: String = "https://api.cryptoeze.com/api/v1",
+    val updatedAt: Long = System.currentTimeMillis()
+)
+

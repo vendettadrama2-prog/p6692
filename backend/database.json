@@ -1,0 +1,66 @@
+{
+  "users": {
+    "p6692_user_1": {
+      "id": "p6692_user_1",
+      "username": "CyberKnight_92",
+      "mobileNumber": "03001234567",
+      "email": "player@p6692.com",
+      "pkrBalance": 0.0,
+      "demoBalance": 5000.0,
+      "vipLevel": 1,
+      "role": "PLAYER",
+      "createdAt": 1728500000000
+    },
+    "p6692_admin_1": {
+      "id": "p6692_admin_1",
+      "username": "P6692_Admin",
+      "mobileNumber": "03009999999",
+      "email": "admin@p6692.com",
+      "pkrBalance": 0.0,
+      "demoBalance": 5000.0,
+      "vipLevel": 10,
+      "role": "ADMIN",
+      "createdAt": 1728500000000
+    }
+  },
+  "deposits": [
+    {
+      "id": 1,
+      "userId": "p6692_user_1",
+      "orderId": "ORD-JC-100291",
+      "method": "JAZZCASH",
+      "amountPkr": 2500.0,
+      "currency": "PKR",
+      "senderMobile": "03001234567",
+      "jazzcashTxnRef": "JC998241582",
+      "status": "SUCCESSFUL",
+      "adminNotes": "Verified via JazzCash Production M-Wallet API (Ahmed Shop)",
+      "createdAt": 1728550000000,
+      "updatedAt": 1728551000000
+    }
+  ],
+  "withdrawals": [],
+  "transactions": [],
+  "jazzcashConfig": {
+    "businessName": "Ahmed Shop",
+    "accountNumber": "01104590863",
+    "merchantId": "MC895945",
+    "apiPassword": "z84t9fx8c8",
+    "integritySalt": "498z5u0th4",
+    "returnUrl": "https://api.p6692.com/api/jazzcash/callback",
+    "environment": "PRODUCTION"
+  },
+  "cryptoezeConfig": {
+    "merchantId": "merch_8bbc74b534e28efb54a3de42",
+    "apiKey": "pk_live_1bbea1f4b9cab098a5189af471d580e9",
+    "secretKey": "sk_live_3860",
+    "webhookSecret": "whsec_4a6112",
+    "webhookUrl": "https://p6692.com/webhooks/cryptoeze",
+    "environment": "LIVE",
+    "settlementChannel": "JAZZCASH",
+    "settlementAccount": "03001234567",
+    "apiUrl": "https://api.cryptoeze.com/api/v1",
+    "activeGateway": "CRYPTOEZE"
+  },
+  "auditLogs": []
+}

@@ -38,6 +38,7 @@ fun P6692MainApp(
     val userDeposits by viewModel.userDeposits.collectAsStateWithLifecycle()
     val allDeposits by viewModel.allDeposits.collectAsStateWithLifecycle()
     val jazzCashConfig by viewModel.jazzCashConfig.collectAsStateWithLifecycle()
+    val cryptoEzeConfig by viewModel.cryptoEzeConfig.collectAsStateWithLifecycle()
 
     val currentScreen by viewModel.currentNavScreen.collectAsStateWithLifecycle()
     val activeGame by viewModel.activeGameForPlay.collectAsStateWithLifecycle()
@@ -78,11 +79,14 @@ fun P6692MainApp(
     }
 
     // Handle system back navigation
+    val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+
     BackHandler(
-        enabled = activeGame != null || selectedDetailGame != null || showAiAdvisor ||
+        enabled = (!isLoggedIn) || activeGame != null || selectedDetailGame != null || showAiAdvisor ||
                 showAdminDashboard || showNotificationsModal || showAuthModal || showDepositModal || currentScreen != NavScreen.HOME
     ) {
         when {
+            !isLoggedIn -> { /* Keep on auth screen */ }
             activeGame != null -> viewModel.exitGame()
             selectedDetailGame != null -> viewModel.closeGameDetail()
             showAiAdvisor -> viewModel.closeAiAdvisor()
@@ -94,13 +98,33 @@ fun P6692MainApp(
         }
     }
 
+    // 0. Primary Startup Screen: Mandatory Registration / Login Before Games & Real Wallet
+    if (!isLoggedIn) {
+        AuthScreen(
+            onLoginSuccess = { usernameOrEmail, role ->
+                viewModel.onUserLoggedIn(usernameOrEmail, role)
+            },
+            onRegisterSuccess = { regUsername, regMobile, regPassword, regEmail ->
+                viewModel.onUserRegistered(regUsername, regMobile, regEmail, "PLAYER")
+            },
+            onGuestDemo = {
+                viewModel.loginGuestDemo()
+            },
+            onClose = {
+                viewModel.loginGuestDemo()
+            },
+            isStartupScreen = true
+        )
+        return
+    }
+
     // 1. Fullscreen Playable Real PKR Game Mode
     if (activeGame != null) {
         val currentGame = activeGame!!
         when (currentGame.id) {
             "cyber_crash" -> {
                 CyberCrashGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -111,7 +135,7 @@ fun P6692MainApp(
             }
             "neon_spin", "neon_slots", "slots_777" -> {
                 NeonSlotsGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -122,7 +146,7 @@ fun P6692MainApp(
             }
             "mines", "mines_game" -> {
                 MinesGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -133,7 +157,7 @@ fun P6692MainApp(
             }
             "plinko", "neon_plinko", "plinko_game" -> {
                 PlinkoGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -144,7 +168,7 @@ fun P6692MainApp(
             }
             "cyber_mines" -> {
                 CyberMinesGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -155,7 +179,7 @@ fun P6692MainApp(
             }
             "jelly", "jelly_game" -> {
                 JellyGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -166,7 +190,7 @@ fun P6692MainApp(
             }
             "aviator", "aviator_game", "rocket", "rocket_aviator", "crash" -> {
                 AviatorGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -177,7 +201,7 @@ fun P6692MainApp(
             }
             "bubble_shooter", "bubble" -> {
                 BubbleShooterGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -188,7 +212,7 @@ fun P6692MainApp(
             }
             "candy_match", "candy" -> {
                 CandyMatchGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -199,7 +223,7 @@ fun P6692MainApp(
             }
             "fruit_merge", "fruit" -> {
                 FruitMergeGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -210,7 +234,7 @@ fun P6692MainApp(
             }
             "money_coming", "money_coming_game", "spinning_wheel", "spin", "spain", "spin_wheel", "quantum_roulette" -> {
                 MoneyComingGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -221,7 +245,7 @@ fun P6692MainApp(
             }
             "fortune_gems", "fortune_gems_2", "fortune_gems_game" -> {
                 FortuneGemsGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -232,7 +256,7 @@ fun P6692MainApp(
             }
             "car_racing", "racing" -> {
                 CarRacingGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -243,7 +267,7 @@ fun P6692MainApp(
             }
             "ludo_game", "ludo" -> {
                 LudoGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -254,7 +278,7 @@ fun P6692MainApp(
             }
             "subway_runner", "runner" -> {
                 SubwayRunnerGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -265,7 +289,7 @@ fun P6692MainApp(
             }
             "piano_tiles", "piano" -> {
                 PianoTilesGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -277,7 +301,7 @@ fun P6692MainApp(
             else -> {
                 // Default fallback to Cyber Crash for other arcade games
                 CyberCrashGame(
-                    pkrBalance = user?.pkrBalance ?: 25000.0,
+                    pkrBalance = user?.pkrBalance ?: 0.0,
                     soundEnabled = soundEnabled,
                     onPlaceBet = { bet -> viewModel.placePkrBet(currentGame.id, currentGame.title, bet) },
                     onCashoutWin = { win, mult, bet -> viewModel.creditPkrGameWin(currentGame.id, currentGame.title, win, mult, bet) },
@@ -331,24 +355,33 @@ fun P6692MainApp(
     // 4. Auth Modal
     if (showAuthModal) {
         AuthScreen(
-            onLoginSuccess = { _, role ->
-                viewModel.switchRole(role)
-                viewModel.showAuthModal.value = false
+            onLoginSuccess = { usernameOrEmail, role ->
+                viewModel.onUserLoggedIn(usernameOrEmail, role)
             },
-            onClose = { viewModel.showAuthModal.value = false }
+            onRegisterSuccess = { regUsername, regMobile, regPassword, regEmail ->
+                viewModel.onUserRegistered(regUsername, regMobile, regEmail, "PLAYER")
+            },
+            onGuestDemo = {
+                viewModel.loginGuestDemo()
+            },
+            onClose = { viewModel.showAuthModal.value = false },
+            isStartupScreen = false
         )
         return
     }
 
-    // 5. Real PKR Deposit Screen (Modern Daraz-style checkout separate from lobby)
+    // 5. Real PKR Deposit Screen (CryptoEze Gateway with JazzCash)
     if (showDepositModal) {
         DepositScreen(
-            pkrBalance = user?.pkrBalance ?: 25000.0,
+            pkrBalance = user?.pkrBalance ?: 0.0,
             jazzCashConfig = jazzCashConfig,
+            cryptoEzeConfig = cryptoEzeConfig,
             userDeposits = userDeposits,
             onCompletePayment = { orderId, method, amt, gatewayTxnId, isSuccess, failureReason ->
                 viewModel.completePaymentVerification(orderId, method, amt, gatewayTxnId, isSuccess, failureReason)
             },
+            onSaveConfig = { viewModel.saveJazzCashConfig(it) },
+            onSaveCryptoEzeConfig = { viewModel.saveCryptoEzeConfig(it) },
             onClose = { viewModel.showDepositModal.value = false }
         )
         return
@@ -361,7 +394,7 @@ fun P6692MainApp(
             .background(DarkBg),
         topBar = {
             P6692TopHeader(
-                pkrBalance = user?.pkrBalance ?: 25000.0,
+                pkrBalance = user?.pkrBalance ?: 0.0,
                 vipLevel = user?.vipLevel ?: 3,
                 unreadNotifications = unreadCount,
                 soundEnabled = soundEnabled,
@@ -441,7 +474,7 @@ fun P6692MainApp(
                         onOpenAiStudio = { viewModel.openAiAdvisor("Platform") },
                         onOpenAdminDashboard = { viewModel.showAdminDashboard.value = true },
                         onToggleRole = { role -> viewModel.switchRole(role) },
-                        onLogout = { viewModel.showAuthModal.value = true }
+                        onLogout = { viewModel.logout() }
                     )
                 }
             }

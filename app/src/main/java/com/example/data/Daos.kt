@@ -26,6 +26,12 @@ interface UserDao {
     @Query("UPDATE users SET pkrBalance = :newBalance WHERE id = :id")
     suspend fun setPkrBalance(id: String, newBalance: Double)
 
+    @Query("UPDATE users SET demoBalance = :newBalance WHERE id = :id")
+    suspend fun setDemoBalance(id: String, newBalance: Double)
+
+    @Query("SELECT * FROM users WHERE username = :query OR mobileNumber = :query OR email = :query LIMIT 1")
+    suspend fun getUserByUsernameOrMobile(query: String): UserEntity?
+
     @Query("UPDATE users SET rewardPoints = rewardPoints + :points WHERE id = :id")
     suspend fun adjustPoints(id: String, points: Int)
 
@@ -198,3 +204,13 @@ interface JazzCashConfigDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveConfig(config: JazzCashConfigEntity)
 }
+
+@Dao
+interface CryptoEzeConfigDao {
+    @Query("SELECT * FROM cryptoeze_config WHERE id = 'primary_cryptoeze' LIMIT 1")
+    fun getConfig(): Flow<CryptoEzeConfigEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveConfig(config: CryptoEzeConfigEntity)
+}
+

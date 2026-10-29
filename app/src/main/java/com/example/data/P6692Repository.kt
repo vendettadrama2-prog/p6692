@@ -1,41 +1,106 @@
 package com.example.data
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class P6692Repository(private val db: AppDatabase) {
-    val userFlow: Flow<UserEntity?> = db.userDao().getUserById("p6692_user_1")
+    val currentUserId = MutableStateFlow("p6692_user_1")
+
+    val userFlow: Flow<UserEntity?> = currentUserId.flatMapLatest { id ->
+        db.userDao().getUserById(id)
+    }
     val allGamesFlow: Flow<List<GameEntity>> = db.gameDao().getAllGames()
     val activeGamesFlow: Flow<List<GameEntity>> = db.gameDao().getActiveGames()
-    val favoriteIdsFlow: Flow<List<String>> = db.favoriteDao().getFavoriteGameIds("p6692_user_1")
-    val gameHistoryFlow: Flow<List<GameHistoryEntity>> = db.gameHistoryDao().getHistoryForUser("p6692_user_1")
+    val favoriteIdsFlow: Flow<List<String>> = currentUserId.flatMapLatest { id ->
+        db.favoriteDao().getFavoriteGameIds(id)
+    }
+    val gameHistoryFlow: Flow<List<GameHistoryEntity>> = currentUserId.flatMapLatest { id ->
+        db.gameHistoryDao().getHistoryForUser(id)
+    }
     val allHistoryFlow: Flow<List<GameHistoryEntity>> = db.gameHistoryDao().getAllHistory()
-    val transactionsFlow: Flow<List<TransactionEntity>> = db.transactionDao().getTransactions("p6692_user_1")
+    val transactionsFlow: Flow<List<TransactionEntity>> = currentUserId.flatMapLatest { id ->
+        db.transactionDao().getTransactions(id)
+    }
     val allTransactionsFlow: Flow<List<TransactionEntity>> = db.transactionDao().getAllTransactions()
     val dailyRewardsFlow: Flow<List<DailyRewardEntity>> = db.dailyRewardDao().getDailyRewards()
     val notificationsFlow: Flow<List<NotificationEntity>> = db.notificationDao().getAllNotifications()
     val unreadNotifsCountFlow: Flow<Int> = db.notificationDao().getUnreadCount()
     val auditLogsFlow: Flow<List<AuditLogEntity>> = db.auditLogDao().getLogs()
     val allUsersFlow: Flow<List<UserEntity>> = db.userDao().getAllUsers()
-    val userDepositsFlow: Flow<List<DepositEntity>> = db.depositDao().getDepositsForUser("p6692_user_1")
+    val userDepositsFlow: Flow<List<DepositEntity>> = currentUserId.flatMapLatest { id ->
+        db.depositDao().getDepositsForUser(id)
+    }
     val allDepositsFlow: Flow<List<DepositEntity>> = db.depositDao().getAllDeposits()
-    val userWithdrawalsFlow: Flow<List<WithdrawalEntity>> = db.withdrawalDao().getWithdrawalsForUser("p6692_user_1")
+    val userWithdrawalsFlow: Flow<List<WithdrawalEntity>> = currentUserId.flatMapLatest { id ->
+        db.withdrawalDao().getWithdrawalsForUser(id)
+    }
     val allWithdrawalsFlow: Flow<List<WithdrawalEntity>> = db.withdrawalDao().getAllWithdrawals()
     val jazzCashConfigFlow: Flow<JazzCashConfigEntity?> = db.jazzCashConfigDao().getConfig()
+    val cryptoEzeConfigFlow: Flow<CryptoEzeConfigEntity?> = db.cryptoEzeConfigDao().getConfig()
+
+    fun setCurrentUserId(id: String) {
+        currentUserId.value = id
+    }
+
+    suspend fun registerUser(
+        username: String,
+        mobileNumber: String,
+        email: String = "",
+        role: String = "PLAYER"
+    ): UserEntity {
+        val cleanUser = username.trim()
+        val cleanMobile = mobileNumber.trim()
+        val cleanEmail = email.trim().ifBlank { "${cleanUser.lowercase()}@p6692.com" }
+        val id = "user_" + System.currentTimeMillis()
+        val newUser = UserEntity(
+            id = id,
+            username = cleanUser,
+            mobileNumber = cleanMobile,
+            email = cleanEmail,
+            pkrBalance = 0.0, // Strictly PKR 0.00 initial real balance
+            demoBalance = 5000.0, // PKR 5,000 DEMO practice credits
+            vipLevel = 1,
+            role = role
+        )
+        db.userDao().insertUser(newUser)
+        setCurrentUserId(id)
+        return newUser
+    }
+
+    suspend fun loginUser(query: String, role: String = "PLAYER"): UserEntity {
+        val cleanQuery = query.trim()
+        val existing = db.userDao().getUserByUsernameOrMobile(cleanQuery)
+        if (existing != null) {
+            setCurrentUserId(existing.id)
+            return existing
+        }
+        val isMobile = cleanQuery.matches(Regex("^[0-9+]+$"))
+        return registerUser(
+            username = if (isMobile) "Gamer_${cleanQuery.takeLast(4)}" else cleanQuery,
+            mobileNumber = if (isMobile) cleanQuery else "03001234567",
+            email = "",
+            role = role
+        )
+    }
 
     suspend fun getGame(id: String): GameEntity? = db.gameDao().getGameById(id)
 
     suspend fun toggleFavorite(gameId: String) {
-        val isFav = db.favoriteDao().isFavorite("p6692_user_1", gameId)
+        val uid = currentUserId.value
+        val isFav = db.favoriteDao().isFavorite(uid, gameId)
         if (isFav) {
-            db.favoriteDao().removeFavorite("p6692_user_1", gameId)
+            db.favoriteDao().removeFavorite(uid, gameId)
         } else {
-            db.favoriteDao().addFavorite(FavoriteEntity("p6692_user_1", gameId))
+            db.favoriteDao().addFavorite(FavoriteEntity(uid, gameId))
         }
     }
 
     // Server-Side Atomic Real PKR Betting Flow
     suspend fun placePkrBet(
-        userId: String = "p6692_user_1",
+        userId: String = currentUserId.value,
         gameId: String,
         gameTitle: String,
         betAmountPkr: Double
@@ -68,7 +133,7 @@ class P6692Repository(private val db: AppDatabase) {
     }
 
     suspend fun creditPkrGameWin(
-        userId: String = "p6692_user_1",
+        userId: String = currentUserId.value,
         gameId: String,
         gameTitle: String,
         winAmountPkr: Double,
@@ -111,7 +176,7 @@ class P6692Repository(private val db: AppDatabase) {
     }
 
     suspend fun recordPkrGameLoss(
-        userId: String = "p6692_user_1",
+        userId: String = currentUserId.value,
         gameId: String,
         gameTitle: String,
         betAmountPkr: Double
@@ -149,7 +214,7 @@ class P6692Repository(private val db: AppDatabase) {
 
     // Real PKR Withdrawal Request (Atomic)
     suspend fun requestWithdrawal(
-        userId: String = "p6692_user_1",
+        userId: String = currentUserId.value,
         amountPkr: Double,
         method: String,
         accountTitle: String,
@@ -272,8 +337,9 @@ class P6692Repository(private val db: AppDatabase) {
         gatewayTxnId: String = "",
         status: String = "PENDING"
     ): Long {
+        val uid = currentUserId.value
         val deposit = DepositEntity(
-            userId = "p6692_user_1",
+            userId = uid,
             orderId = orderId,
             method = method,
             amountPkr = amountPkr,
@@ -283,14 +349,14 @@ class P6692Repository(private val db: AppDatabase) {
         )
         val id = db.depositDao().insertDeposit(deposit)
         if (status == "SUCCESSFUL") {
-            val user = db.userDao().getUserByIdSync("p6692_user_1")
+            val user = db.userDao().getUserByIdSync(uid)
             val prevBal = user?.pkrBalance ?: 0.0
             val newBal = prevBal + amountPkr
-            db.userDao().setPkrBalance("p6692_user_1", newBal)
+            db.userDao().setPkrBalance(uid, newBal)
 
             db.transactionDao().insertTransaction(
                 TransactionEntity(
-                    userId = "p6692_user_1",
+                    userId = uid,
                     transactionId = "TXN-DEP-${System.currentTimeMillis()}",
                     type = "DEPOSIT",
                     amountPkr = amountPkr,
@@ -322,6 +388,7 @@ class P6692Repository(private val db: AppDatabase) {
         isSuccess: Boolean,
         failureReason: String = ""
     ) {
+        val uid = currentUserId.value
         // Idempotency & Duplicate-Payment Protection: Ensure orderId has not already been credited
         val existingDeposit = db.depositDao().getDepositByOrderId(orderId)
         if (existingDeposit != null && existingDeposit.status == "SUCCESSFUL") {
@@ -340,7 +407,7 @@ class P6692Repository(private val db: AppDatabase) {
 
         val deposit = DepositEntity(
             id = existingDeposit?.id ?: 0,
-            userId = "p6692_user_1",
+            userId = uid,
             orderId = orderId,
             method = method,
             amountPkr = amountPkr,
@@ -351,14 +418,14 @@ class P6692Repository(private val db: AppDatabase) {
         db.depositDao().insertDeposit(deposit)
 
         if (verifiedSuccess) {
-            val user = db.userDao().getUserByIdSync("p6692_user_1")
+            val user = db.userDao().getUserByIdSync(uid)
             val prevBal = user?.pkrBalance ?: 0.0
             val newBal = prevBal + amountPkr
-            db.userDao().setPkrBalance("p6692_user_1", newBal)
+            db.userDao().setPkrBalance(uid, newBal)
 
             db.transactionDao().insertTransaction(
                 TransactionEntity(
-                    userId = "p6692_user_1",
+                    userId = uid,
                     transactionId = "TXN-DEP-${System.currentTimeMillis()}",
                     type = "DEPOSIT",
                     amountPkr = amountPkr,
@@ -460,12 +527,13 @@ class P6692Repository(private val db: AppDatabase) {
     }
 
     suspend fun claimDailyReward(day: Int, credits: Double, points: Int) {
+        val uid = currentUserId.value
         db.dailyRewardDao().claimReward(day)
-        db.userDao().adjustBalance("p6692_user_1", credits)
-        db.userDao().adjustPoints("p6692_user_1", points)
+        db.userDao().adjustBalance(uid, credits)
+        db.userDao().adjustPoints(uid, points)
         db.transactionDao().insertTransaction(
             TransactionEntity(
-                userId = "p6692_user_1",
+                userId = uid,
                 transactionId = "TXN-REW-$day-${System.currentTimeMillis()}",
                 type = "ADJUSTMENT",
                 amountPkr = credits,
@@ -476,13 +544,14 @@ class P6692Repository(private val db: AppDatabase) {
     }
 
     suspend fun claimHourlyFaucet(amount: Double) {
-        val user = db.userDao().getUserByIdSync("p6692_user_1")
+        val uid = currentUserId.value
+        val user = db.userDao().getUserByIdSync(uid)
         val prevBal = user?.pkrBalance ?: 0.0
         val newBal = prevBal + amount
-        db.userDao().setPkrBalance("p6692_user_1", newBal)
+        db.userDao().setPkrBalance(uid, newBal)
         db.transactionDao().insertTransaction(
             TransactionEntity(
-                userId = "p6692_user_1",
+                userId = uid,
                 transactionId = "TXN-FAUCET-${System.currentTimeMillis()}",
                 type = "ADJUSTMENT",
                 amountPkr = amount,
@@ -496,15 +565,16 @@ class P6692Repository(private val db: AppDatabase) {
 
     suspend fun markNotificationAsRead(id: Long) = db.notificationDao().markAsRead(id)
     suspend fun markAllNotificationsAsRead() = db.notificationDao().markAllAsRead()
-    suspend fun updateAvatar(url: String) = db.userDao().updateAvatar("p6692_user_1", url)
+    suspend fun updateAvatar(url: String) = db.userDao().updateAvatar(currentUserId.value, url)
 
     suspend fun switchRole(role: String) {
-        db.userDao().updateRole("p6692_user_1", role)
+        val uid = currentUserId.value
+        db.userDao().updateRole(uid, role)
         db.auditLogDao().insertLog(
             AuditLogEntity(
                 adminName = "System",
                 action = "ROLE_CHANGE",
-                target = "p6692_user_1",
+                target = uid,
                 details = "User role switched to $role"
             )
         )
@@ -581,6 +651,18 @@ class P6692Repository(private val db: AppDatabase) {
                 action = "JAZZCASH_CONFIG_UPDATE",
                 target = config.merchantId,
                 details = "Updated JazzCash business account credentials (Business: ${config.businessName}, Acct: ${config.accountNumber})"
+            )
+        )
+    }
+
+    suspend fun saveCryptoEzeConfig(config: CryptoEzeConfigEntity) {
+        db.cryptoEzeConfigDao().saveConfig(config)
+        db.auditLogDao().insertLog(
+            AuditLogEntity(
+                adminName = "Admin",
+                action = "CRYPTOEZE_CONFIG_UPDATE",
+                target = config.merchantId,
+                details = "Updated CryptoEze credentials (Merchant: ${config.merchantId}, Env: ${config.environment}, Channel: ${config.defaultChannel}, Settlement: ${config.settlementAccount})"
             )
         )
     }

@@ -1,0 +1,23 @@
+# P6692 Hostinger / Apache Web Server Configuration
+<IfModule mod_mime.c>
+    # Ensure correct MIME type for Android APK downloads
+    AddType application/vnd.android.package-archive .apk
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Force HTTPS if SSL is enabled
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Caching and Compression for fast loading
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Prevent directory browsing
+Options -Indexes
+
+# Error handling
+ErrorDocument 404 /404.html

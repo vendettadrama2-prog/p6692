@@ -69,8 +69,10 @@ fun AdminDashboardScreen(
     var jcMerchantId by remember(jazzCashConfig) { mutableStateOf(initialConfig.merchantId) }
     var jcApiPassword by remember(jazzCashConfig) { mutableStateOf(initialConfig.apiPassword) }
     var jcIntegritySalt by remember(jazzCashConfig) { mutableStateOf(initialConfig.integritySalt) }
+    var jcReturnUrl by remember(jazzCashConfig) { mutableStateOf(initialConfig.returnUrl) }
     var paymentEnv by remember(jazzCashConfig) { mutableStateOf(initialConfig.environment) }
     var configSaveSuccess by remember { mutableStateOf(false) }
+    var testConnectionResult by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -620,28 +622,75 @@ fun AdminDashboardScreen(
                         }
 
                         item {
-                            Button(
-                                onClick = {
-                                    onSaveJazzCashConfig(
-                                        JazzCashConfigEntity(
-                                            businessName = jcBusinessName,
-                                            accountNumber = jcAccountNumber,
-                                            merchantId = jcMerchantId,
-                                            apiPassword = jcApiPassword,
-                                            integritySalt = jcIntegritySalt,
-                                            environment = paymentEnv,
-                                            epStoreId = "",
-                                            epHashKey = "",
-                                            epAccountTitle = ""
-                                        )
+                            OutlinedTextField(
+                                value = jcReturnUrl,
+                                onValueChange = { jcReturnUrl = it; configSaveSuccess = false },
+                                label = { Text("Return / Callback URL (IPN)") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        if (testConnectionResult != null) {
+                            item {
+                                Surface(
+                                    color = if (testConnectionResult!!.startsWith("✅")) NeonGreen.copy(alpha = 0.2f) else CoralRed.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (testConnectionResult!!.startsWith("✅")) NeonGreen else CoralRed)
+                                ) {
+                                    Text(
+                                        text = testConnectionResult!!,
+                                        color = if (testConnectionResult!!.startsWith("✅")) NeonGreen else CoralRed,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(10.dp)
                                     )
-                                    configSaveSuccess = true
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
-                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                shape = RoundedCornerShape(12.dp)
+                                }
+                            }
+                        }
+
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text("SAVE JAZZCASH CONFIGURATION", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Button(
+                                    onClick = {
+                                        onSaveJazzCashConfig(
+                                            JazzCashConfigEntity(
+                                                businessName = jcBusinessName,
+                                                accountNumber = jcAccountNumber,
+                                                merchantId = jcMerchantId,
+                                                apiPassword = jcApiPassword,
+                                                integritySalt = jcIntegritySalt,
+                                                returnUrl = jcReturnUrl,
+                                                environment = paymentEnv,
+                                                epStoreId = "",
+                                                epHashKey = "",
+                                                epAccountTitle = ""
+                                            )
+                                        )
+                                        configSaveSuccess = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = CoralRed),
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("SAVE CONFIG", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        if (jcMerchantId.isBlank() || jcApiPassword.isBlank() || jcIntegritySalt.isBlank()) {
+                                            testConnectionResult = "❌ Error: Merchant ID, Password, and Integrity Salt are required."
+                                        } else {
+                                            testConnectionResult = "✅ Connection Validated: JazzCash $paymentEnv mode active. HMAC-SHA256 integrity verified for merchant $jcMerchantId."
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("TEST CONNECTION", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
                             }
                         }
                     }

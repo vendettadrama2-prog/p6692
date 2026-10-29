@@ -173,19 +173,38 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(NeonGreen.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("₨", color = NeonGreen, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(NeonGreen.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("₨", color = NeonGreen, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                            }
+                            Column {
+                                Text("Real PKR Wallet Balance", color = NeonGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text("PKR ${String.format("%,.2f", user?.pkrBalance ?: 0.0)}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            }
                         }
-                        Column {
-                            Text("Real PKR Wallet Balance", color = TextSecondary, fontSize = 11.sp)
-                            Text("PKR ${String.format("%,.2f", user?.pkrBalance ?: 25000.0)}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+                        // Demo Practice Balance Strip
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(GoldYellow.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("🎮", fontSize = 14.sp)
+                            }
+                            Column {
+                                Text("DEMO BALANCE — NOT REAL MONEY", color = GoldYellow, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("PKR ${String.format("%,.2f", user?.demoBalance ?: 5000.0)}", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            }
                         }
                     }
 

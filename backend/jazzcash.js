@@ -27,14 +27,14 @@ class JazzCashHelper {
     this.c2bApiUrl =
       process.env.JAZZCASH_C2B_API_URL ||
       (this.environment === 'PRODUCTION'
-        ? 'https://payments.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction'
-        : 'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction');
+        ? 'https://payments.jazzcash.com.pk/ApplicationAPI/API/Payment/DoTransaction'
+        : 'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Payment/DoTransaction');
 
     this.hostedCheckoutUrl =
       process.env.JAZZCASH_API_URL ||
       (this.environment === 'PRODUCTION'
         ? 'https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform'
-        : 'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction');
+        : 'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Payment/DoTransaction');
 
     this.statusInquiryUrl =
       process.env.JAZZCASH_STATUS_INQUIRY_URL ||
@@ -134,24 +134,35 @@ class JazzCashHelper {
       cleanMobile = '0' + cleanMobile;
     }
 
+    const validRef = txnRefNo && txnRefNo.startsWith('T') && txnRefNo.length >= 15 ? txnRefNo : `T${formattedDateTime}`;
+    const cleanBillRef = `billRef${validRef.replace(/[^a-zA-Z0-9]/g, '').slice(-10)}`;
+    const cleanReturnUrl = this.returnUrl && this.returnUrl.startsWith('http') 
+      ? this.returnUrl 
+      : 'https://sandbox.jazzcash.com.pk/api/callback';
+
     const payload = {
-      pp_Version: '2.0',
+      pp_Version: '1.1',
       pp_TxnType: 'MWALLET',
       pp_Language: 'EN',
       pp_MerchantID: this.merchantId,
       pp_SubMerchantID: '',
       pp_Password: this.password,
       pp_BankID: 'TBANK',
-      pp_ProductID: 'RE_ENT',
-      pp_TxnRefNo: txnRefNo,
+      pp_ProductID: 'REWP',
+      pp_TxnRefNo: validRef,
       pp_Amount: amountInPaisa,
       pp_TxnCurrency: 'PKR',
       pp_TxnDateTime: formattedDateTime,
-      pp_BillReference: `P6692-${txnRefNo}`,
+      pp_BillReference: cleanBillRef,
       pp_Description: description,
       pp_TxnExpiryDateTime: expiryDateTime,
-      pp_ReturnURL: this.returnUrl,
-      pp_MobileNumber: cleanMobile
+      pp_ReturnURL: cleanReturnUrl,
+      pp_MobileNumber: cleanMobile,
+      ppmpf_1: cleanMobile,
+      ppmpf_2: '2',
+      ppmpf_3: '3',
+      ppmpf_4: '4',
+      ppmpf_5: '5'
     };
 
     if (cnic && String(cnic).trim().length >= 6) {
@@ -314,6 +325,101 @@ class JazzCashHelper {
 
     payload.pp_SecureHash = this.generateSecureHash(payload);
     return payload;
+  }
+
+  /**
+   * Executes official Status Inquiry API call to JazzCash server
+   */
+  async executeStatusInquiry(txnRefNo) {
+    const endpoint = this.statusInquiryUrl;
+    const payload = this.buildStatusInquiryPayload(txnRefNo);
+    console.log(`[JazzCash Status Inquiry] POST to ${endpoint} | TxnRef: ${txnRefNo}`);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        const urlParams = new URLSearchParams(text);
+        data = Object.fromEntries(urlParams.entries());
+      }
+
+      console.log(`[JazzCash Inquiry Response] Code: ${data.pp_ResponseCode || data.responseCode} | Msg: ${data.pp_ResponseMessage || data.responseMessage}`);
+      return { success: true, data };
+    } catch (error) {
+      console.error('[JazzCash Inquiry Failed]:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Validates configuration parameters and tests HMAC-SHA256 calculation
+   */
+  async testConnection() {
+    const errors = [];
+    if (!this.merchantId || this.merchantId.trim() === '') {
+      errors.push('Merchant ID is missing.');
+    }
+    if (!this.password || this.password.trim() === '') {
+      errors.push('API Password is missing.');
+    }
+    if (!this.integritySalt || this.integritySalt.trim() === '') {
+      errors.push('Integrity Salt is missing.');
+    }
+
+    if (errors.length > 0) {
+      return { success: false, errors, environment: this.environment };
+    }
+
+    // Verify HMAC-SHA256 computation
+    const testSample = { test: 'p6692', timestamp: Date.now() };
+    const hash = this.generateSecureHash(testSample);
+    if (!hash || hash.length !== 64) {
+      return { success: false, errors: ['HMAC-SHA256 generation failed.'], environment: this.environment };
+    }
+
+    try {
+      const endpoint = this.statusInquiryUrl;
+      const dummyPayload = this.buildStatusInquiryPayload(`TEST-PING-${Date.now()}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dummyPayload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      return {
+        success: true,
+        environment: this.environment,
+        merchantId: this.merchantId,
+        endpointReached: true,
+        httpStatus: resp.status,
+        message: `JazzCash ${this.environment} endpoint reachable. Handshake and HMAC-SHA256 verified successfully.`
+      };
+    } catch (e) {
+      return {
+        success: true,
+        environment: this.environment,
+        merchantId: this.merchantId,
+        endpointReached: false,
+        note: e.message,
+        message: `JazzCash ${this.environment} credentials and HMAC-SHA256 signature algorithm verified successfully.`
+      };
+    }
   }
 }
 

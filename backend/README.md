@@ -74,6 +74,24 @@ USER PKR BALANCE
 * `GET /api/transactions/user/:userId`  
   Complete transaction ledger.
 
+### Dedicated Fintech Payment Gateway API Endpoints
+* `POST /api/payment/deposit`  
+  Generates official HMAC-SHA256 signature using Merchant ID, Password, and Integrity Salt. Initiates direct HTTP POST to `https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Payment/DoTransaction` (or production endpoint) for mobile wallet direct debit (MWALLET).
+* `POST /api/payment/callback`  
+  Official IPN webhook listener that validates JazzCash's incoming HMAC-SHA256 signature, confirms transaction legitimacy, prevents duplicate credits, and automatically updates the user's database balance.
+* `POST /api/payment/withdraw`  
+  Validates withdrawal requests (minimum PKR 500, balance check, mobile account validation) and initiates real B2C payout / disbursement.
+
+### Live Sandbox Endpoint
+```
+https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Payment/DoTransaction
+```
+
+### Production Endpoint
+```
+https://payments.jazzcash.com.pk/ApplicationAPI/API/Payment/DoTransaction
+```
+
 ### Admin Console APIs
 * `GET /api/admin/deposits`  
   Lists all incoming deposit transactions with JazzCash reference and status.
@@ -81,3 +99,4 @@ USER PKR BALANCE
   Admin audit confirmation.
 * `GET /api/admin/config/jazzcash` & `PUT /api/admin/config/jazzcash`  
   View and update merchant credentials.
+

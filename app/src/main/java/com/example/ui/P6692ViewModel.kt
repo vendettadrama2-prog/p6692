@@ -68,6 +68,12 @@ class P6692ViewModel(application: Application) : AndroidViewModel(application) {
     val jazzCashConfig: StateFlow<JazzCashConfigEntity?> = repository.jazzCashConfigFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val cryptoEzeConfig: StateFlow<CryptoEzeConfigEntity?> = repository.cryptoEzeConfigFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // Authentication & Startup Gateway State
+    var isLoggedIn = MutableStateFlow(false)
+
     // Navigation and Modals State
     var currentNavScreen = MutableStateFlow(NavScreen.HOME)
     var activeGameForPlay = MutableStateFlow<GameEntity?>(null)
@@ -81,6 +87,40 @@ class P6692ViewModel(application: Application) : AndroidViewModel(application) {
     var showNotificationsModal = MutableStateFlow(false)
     var showDepositModal = MutableStateFlow(false)
     var showWithdrawalModal = MutableStateFlow(false)
+
+    fun onUserLoggedIn(userIdentifier: String, role: String) {
+        viewModelScope.launch {
+            repository.loginUser(userIdentifier, role)
+            isLoggedIn.value = true
+            showAuthModal.value = false
+        }
+    }
+
+    fun onUserRegistered(username: String, mobileNumber: String, email: String = "", role: String = "PLAYER") {
+        viewModelScope.launch {
+            repository.registerUser(username, mobileNumber, email, role)
+            isLoggedIn.value = true
+            showAuthModal.value = false
+        }
+    }
+
+    fun loginGuestDemo() {
+        viewModelScope.launch {
+            repository.loginUser("p6692_user_1", "PLAYER")
+            isLoggedIn.value = true
+            showAuthModal.value = false
+        }
+    }
+
+    fun logout() {
+        isLoggedIn.value = false
+        showAuthModal.value = true
+        activeGameForPlay.value = null
+        selectedGameForDetail.value = null
+        showAdminDashboard.value = false
+        showDepositModal.value = false
+        currentNavScreen.value = NavScreen.HOME
+    }
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -288,6 +328,12 @@ class P6692ViewModel(application: Application) : AndroidViewModel(application) {
     fun saveJazzCashConfig(config: JazzCashConfigEntity) {
         viewModelScope.launch {
             repository.saveJazzCashConfig(config)
+        }
+    }
+
+    fun saveCryptoEzeConfig(config: CryptoEzeConfigEntity) {
+        viewModelScope.launch {
+            repository.saveCryptoEzeConfig(config)
         }
     }
 }

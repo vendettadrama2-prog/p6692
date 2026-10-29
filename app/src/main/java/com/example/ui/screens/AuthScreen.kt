@@ -28,11 +28,18 @@ import com.example.ui.theme.*
 @Composable
 fun AuthScreen(
     onLoginSuccess: (String, String) -> Unit,
-    onClose: () -> Unit
+    onRegisterSuccess: (username: String, mobileNumber: String, password: String, email: String) -> Unit = { _, _, _, _ -> },
+    onGuestDemo: () -> Unit = {},
+    onClose: (() -> Unit)? = null,
+    isStartupScreen: Boolean = false
 ) {
-    var mode by remember { mutableStateOf("LOGIN") } // LOGIN, REGISTER, FORGOT, OTP
+    var mode by remember { mutableStateOf(if (isStartupScreen) "REGISTER" else "LOGIN") } // LOGIN, REGISTER, FORGOT, OTP
     var usernameOrEmail by remember { mutableStateOf("player@p6692.com") }
     var password by remember { mutableStateOf("cyber123") }
+    var regUsername by remember { mutableStateOf("") }
+    var regMobile by remember { mutableStateOf("") }
+    var regEmail by remember { mutableStateOf("") }
+    var regPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var otpCode by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -54,20 +61,32 @@ fun AuthScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Top Close
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(onClick = onClose) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+            // Top Close (Only when opened as modal from inside app, not startup screen)
+            if (!isStartupScreen) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(onClick = { onClose?.invoke() }) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                    }
                 }
+            } else {
+                Spacer(modifier = Modifier.height(10.dp))
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
 
             // Logo
             P6692Logo(size = LogoSize.LARGE, showSubtext = true)
+
+            if (isStartupScreen) {
+                Text(
+                    text = "🇵🇰 Pakistan's Real PKR Gaming & Instant JazzCash Payments Portal",
+                    color = AccentCyan,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -207,18 +226,41 @@ fun AuthScreen(
 
                         "REGISTER" -> {
                             OutlinedTextField(
-                                value = usernameOrEmail,
-                                onValueChange = { usernameOrEmail = it },
-                                label = { Text("Email Address") },
-                                leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null, tint = AccentCyan) },
+                                value = regUsername,
+                                onValueChange = { regUsername = it; errorMessage = null },
+                                label = { Text("Choose Username") },
+                                placeholder = { Text("e.g. CyberGamer_92") },
+                                leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = AccentCyan) },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White),
                                 singleLine = true
                             )
 
                             OutlinedTextField(
-                                value = password,
-                                onValueChange = { password = it },
+                                value = regMobile,
+                                onValueChange = { regMobile = it; errorMessage = null },
+                                label = { Text("Mobile Number (JazzCash / Easypaisa)") },
+                                placeholder = { Text("03001234567") },
+                                leadingIcon = { Icon(imageVector = Icons.Default.Phone, contentDescription = null, tint = NeonGreen) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                                singleLine = true
+                            )
+
+                            OutlinedTextField(
+                                value = regEmail,
+                                onValueChange = { regEmail = it; errorMessage = null },
+                                label = { Text("Email Address (Optional)") },
+                                placeholder = { Text("player@example.com") },
+                                leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null, tint = TextMuted) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                                singleLine = true
+                            )
+
+                            OutlinedTextField(
+                                value = regPassword,
+                                onValueChange = { regPassword = it; errorMessage = null },
                                 label = { Text("Choose Password") },
                                 leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = BrightPurple) },
                                 visualTransformation = PasswordVisualTransformation(),
@@ -227,13 +269,30 @@ fun AuthScreen(
                                 singleLine = true
                             )
 
+                            Surface(
+                                color = NeonGreen.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(0.8.dp, NeonGreen.copy(alpha = 0.4f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "💡 New accounts start with PKR 0.00 Real Wallet and PKR 5,000 DEMO practice credits.",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+
                             Button(
                                 onClick = {
-                                    if (usernameOrEmail.isBlank() || password.length < 4) {
-                                        errorMessage = "Please provide a valid email and 4+ character password."
+                                    if (regUsername.trim().length < 3) {
+                                        errorMessage = "Please enter a username with at least 3 characters."
+                                    } else if (regPassword.length < 4) {
+                                        errorMessage = "Please enter a password with at least 4 characters."
+                                    } else if (regMobile.trim().length < 10) {
+                                        errorMessage = "Please enter a valid JazzCash / Easypaisa mobile number (03XXXXXXXXX)."
                                     } else {
-                                        mode = "OTP"
-                                        successNotice = "A 6-digit verification code was simulated for $usernameOrEmail."
+                                        onRegisterSuccess(regUsername.trim(), regMobile.trim(), regPassword, regEmail.trim())
                                     }
                                 },
                                 modifier = Modifier
@@ -242,7 +301,7 @@ fun AuthScreen(
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = BrightPurple)
                             ) {
-                                Text("CONTINUE TO VERIFY OTP", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("REGISTER ACCOUNT & ENTER", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
                         }
 
@@ -289,7 +348,11 @@ fun AuthScreen(
                             Button(
                                 onClick = {
                                     if (otpCode == "669200" || otpCode.length >= 4) {
-                                        onLoginSuccess(usernameOrEmail, "PLAYER")
+                                        if (regUsername.isNotBlank()) {
+                                            onRegisterSuccess(regUsername.trim(), regMobile.trim(), regPassword, regEmail.trim())
+                                        } else {
+                                            onLoginSuccess(usernameOrEmail, "PLAYER")
+                                        }
                                     } else {
                                         errorMessage = "Invalid code. Use demo code: 669200"
                                     }
@@ -306,9 +369,24 @@ fun AuthScreen(
                         }
                     }
 
-                    // Demo Quick Switcher Shortcuts
-                    Divider(color = CardBorder)
-                    Text("Instant Demo Quick Sign-In:", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    // Demo Quick Switcher & Guest Practice Mode
+                    HorizontalDivider(color = CardBorder)
+                    Text("Instant Access & Practice:", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+
+                    Button(
+                        onClick = onGuestDemo,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = GoldYellow.copy(alpha = 0.2f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GoldYellow)
+                    ) {
+                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = GoldYellow, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("TRY DEMO PRACTICE (PKR 5,000 DEMO)", color = GoldYellow, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)

@@ -48,10 +48,17 @@ fun WalletScreen(
     var wthAccountNumber by remember { mutableStateOf("03001234567") }
     var wthErrorMessage by remember { mutableStateOf("") }
     var wthSuccessMessage by remember { mutableStateOf("") }
+    var selectedWalletType by remember { mutableStateOf("REAL") } // "REAL" or "DEMO"
+    var txnStatusFilter by remember { mutableStateOf("ALL") } // "ALL", "SUCCESSFUL", "PENDING", "FAILED"
 
     val activeWithdrawAmount = remember(wthAmount, wthCustomText) {
         val parsed = wthCustomText.toDoubleOrNull()
         if (parsed != null && parsed > 0) parsed else wthAmount
+    }
+
+    val displayedTxns = remember(transactions, txnStatusFilter) {
+        if (txnStatusFilter == "ALL") transactions
+        else transactions.filter { it.status.equals(txnStatusFilter, ignoreCase = true) }
     }
 
     LazyColumn(
@@ -61,7 +68,7 @@ fun WalletScreen(
         contentPadding = PaddingValues(16.dp, bottom = 90.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Real PKR Cash Wallet Card
+        // Real PKR vs Demo Practice Wallet Selector Card
         item {
             Box(
                 modifier = Modifier
@@ -76,113 +83,228 @@ fun WalletScreen(
                             )
                         )
                     )
-                    .border(1.5.dp, NeonGreen.copy(alpha = 0.7f), RoundedCornerShape(24.dp))
+                    .border(
+                        1.5.dp,
+                        if (selectedWalletType == "REAL") NeonGreen.copy(alpha = 0.7f) else GoldYellow.copy(alpha = 0.7f),
+                        RoundedCornerShape(24.dp)
+                    )
                     .padding(20.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    // Wallet Mode Selector Pill
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(SecondaryBg)
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(NeonGreen.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("₨", color = NeonGreen, fontWeight = FontWeight.Black, fontSize = 16.sp)
-                            }
-                            Column {
-                                Text(
-                                    text = "REAL PKR WALLET",
-                                    color = NeonGreen,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = "Instant JazzCash & Easypaisa Settlements",
-                                    color = TextSecondary,
-                                    fontSize = 11.sp
-                                )
-                            }
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { selectedWalletType = "REAL" },
+                            color = if (selectedWalletType == "REAL") NeonGreen.copy(alpha = 0.25f) else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp),
+                            border = if (selectedWalletType == "REAL") androidx.compose.foundation.BorderStroke(1.dp, NeonGreen) else null
+                        ) {
+                            Text(
+                                text = "💳 REAL PKR WALLET",
+                                color = if (selectedWalletType == "REAL") NeonGreen else TextSecondary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
                         }
 
                         Surface(
-                            color = NeonGreen.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, NeonGreen)
-                        ) {
-                            Text(
-                                text = "ACTIVE ACCOUNT",
-                                color = NeonGreen,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-
-                    // Balance Display
-                    Column {
-                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "PKR",
-                                color = NeonGreen,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = String.format("%,.2f", user?.pkrBalance ?: 25000.0),
-                                color = Color.White,
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                        Text(
-                            text = "Authenticated Server Balance • Instant Settlement",
-                            color = TextSecondary,
-                            fontSize = 11.sp
-                        )
-                    }
-
-                    // Action Buttons: Deposit & Withdraw
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = onOpenDeposit,
                             modifier = Modifier
                                 .weight(1f)
-                                .height(46.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = NeonGreen)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { selectedWalletType = "DEMO" },
+                            color = if (selectedWalletType == "DEMO") GoldYellow.copy(alpha = 0.25f) else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp),
+                            border = if (selectedWalletType == "DEMO") androidx.compose.foundation.BorderStroke(1.dp, GoldYellow) else null
                         ) {
-                            Icon(imageVector = Icons.Default.AddCard, contentDescription = null, tint = DarkBg, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("DEPOSIT PKR", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                            Text(
+                                text = "🎮 DEMO PRACTICE",
+                                color = if (selectedWalletType == "DEMO") GoldYellow else TextSecondary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+
+                    if (selectedWalletType == "REAL") {
+                        // REAL WALLET VIEW
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(NeonGreen.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("₨", color = NeonGreen, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                                }
+                                Column {
+                                    Text(
+                                        text = "REAL PKR WALLET",
+                                        color = NeonGreen,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    )
+                                    Text(
+                                        text = "Instant JazzCash & Easypaisa Settlements",
+                                        color = TextSecondary,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                color = NeonGreen.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, NeonGreen)
+                            ) {
+                                Text(
+                                    text = "LIVE ACCOUNT",
+                                    color = NeonGreen,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
                         }
 
-                        OutlinedButton(
+                        // Real Balance Display
+                        Column {
+                            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text = "PKR",
+                                    color = NeonGreen,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = String.format("%,.2f", user?.pkrBalance ?: 0.0),
+                                    color = Color.White,
+                                    fontSize = 36.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                            Text(
+                                text = "Authenticated Server Balance • CryptoEze & JazzCash Settlement",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        // Action Buttons: Deposit & Withdraw
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Button(
+                                onClick = onOpenDeposit,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = NeonGreen)
+                            ) {
+                                Icon(imageVector = Icons.Default.AddCard, contentDescription = null, tint = DarkBg, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("DEPOSIT PKR", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    wthErrorMessage = ""
+                                    wthSuccessMessage = ""
+                                    showWithdrawDialog = true
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentCyan)
+                            ) {
+                                Icon(imageVector = Icons.Default.ArrowOutward, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("WITHDRAW PKR", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+                    } else {
+                        // DEMO WALLET VIEW
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = CoralRed.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CoralRed)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = "⚠️ DEMO BALANCE — NOT REAL MONEY",
+                                    color = CoralRed,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    text = "Demo credits are for test & practice games only. They cannot be withdrawn or transferred to real wallets.",
+                                    color = TextSecondary,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+
+                        // Demo Balance Display
+                        Column {
+                            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text = "DEMO",
+                                    color = GoldYellow,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = String.format("%,.2f", user?.demoBalance ?: 5000.0),
+                                    color = Color.White,
+                                    fontSize = 36.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                            Text(
+                                text = "Practice Balance (PKR 5,000 Starting Credits)",
+                                color = TextMuted,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        Button(
                             onClick = {
-                                wthErrorMessage = ""
-                                wthSuccessMessage = ""
-                                showWithdrawDialog = true
+                                onClaimFaucet()
                             },
                             modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
+                                .fillMaxWidth()
+                                .height(44.dp),
                             shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentCyan)
+                            colors = ButtonDefaults.buttonColors(containerColor = GoldYellow)
                         ) {
-                            Icon(imageVector = Icons.Default.ArrowOutward, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(18.dp))
+                            Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = DarkBg, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("WITHDRAW PKR", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("REPLENISH DEMO CREDITS", color = DarkBg, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                     }
                 }
@@ -265,7 +387,45 @@ fun WalletScreen(
 
         // TAB 0: Complete Server-Side Wallet Ledger
         if (currentTab == 0) {
-            if (transactions.isEmpty()) {
+            // Status Filter Chips: All, Success, Pending, Failed
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf("ALL" to "All", "SUCCESSFUL" to "Success", "PENDING" to "Pending", "FAILED" to "Failed").forEach { (filterKey, label) ->
+                        val isSel = txnStatusFilter == filterKey
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    txnStatusFilter = filterKey
+                                },
+                            color = if (isSel) 
+                                AccentCyan.copy(alpha = 0.2f) 
+                            else 
+                                SecondaryBg,
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                0.8.dp, 
+                                if (isSel) AccentCyan else CardBorder
+                            )
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (isSel) AccentCyan else TextSecondary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (displayedTxns.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -273,11 +433,11 @@ fun WalletScreen(
                             .padding(vertical = 40.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("No ledger transactions recorded yet.", color = TextMuted, fontSize = 13.sp)
+                        Text("No ledger transactions found matching filter.", color = TextMuted, fontSize = 13.sp)
                     }
                 }
             } else {
-                items(transactions) { txn ->
+                items(displayedTxns) { txn ->
                     val dateStr = remember(txn.timestamp) {
                         SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()).format(Date(txn.timestamp))
                     }
@@ -290,6 +450,11 @@ fun WalletScreen(
                         "WITHDRAWAL" -> AccentCyan
                         "REFUND" -> NeonGreen
                         else -> TextSecondary
+                    }
+                    val statusColor = when (txn.status.uppercase()) {
+                        "SUCCESSFUL", "SUCCESS", "COMPLETED" -> NeonGreen
+                        "PENDING" -> GoldYellow
+                        else -> CoralRed
                     }
 
                     Surface(
@@ -339,10 +504,37 @@ fun WalletScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "ID: ${txn.transactionId}",
+                                    color = AccentCyan,
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 11.sp
+                                )
+
+                                Surface(
+                                    color = statusColor.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(4.dp),
+                                    border = androidx.compose.foundation.BorderStroke(0.8.dp, statusColor)
+                                ) {
+                                    Text(
+                                        text = txn.status.ifBlank { "SUCCESSFUL" },
+                                        color = statusColor,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 9.sp,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = if (txn.newBalance > 0) "Bal: PKR ${String.format("%,.0f", txn.newBalance)}" else txn.transactionId,
+                                    text = if (txn.newBalance > 0) "Bal: PKR ${String.format("%,.0f", txn.newBalance)}" else "",
                                     color = TextMuted,
                                     fontSize = 11.sp
                                 )

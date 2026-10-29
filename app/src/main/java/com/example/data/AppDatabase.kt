@@ -21,9 +21,10 @@ import kotlinx.coroutines.launch
         AuditLogEntity::class,
         DepositEntity::class,
         WithdrawalEntity::class,
-        JazzCashConfigEntity::class
+        JazzCashConfigEntity::class,
+        CryptoEzeConfigEntity::class
     ],
-    version = 9,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,6 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun auditLogDao(): AuditLogDao
     abstract fun depositDao(): DepositDao
     abstract fun jazzCashConfigDao(): JazzCashConfigDao
+    abstract fun cryptoEzeConfigDao(): CryptoEzeConfigDao
 
     companion object {
         @Volatile
@@ -84,23 +86,22 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         suspend fun populateInitialData(db: AppDatabase) {
-            // 1. Seed or Verify User with Real PKR Balance
+            // 1. Seed or Verify User with Real PKR Balance (0.00) & Demo Balance (5,000.00)
             val existingUser = db.userDao().getUserByIdSync("p6692_user_1")
             if (existingUser == null) {
                 db.userDao().insertUser(
                     UserEntity(
                         id = "p6692_user_1",
                         username = "CyberKnight_92",
+                        mobileNumber = "03001234567",
                         email = "player@p6692.com",
-                        vipLevel = 3,
-                        pkrBalance = 25000.0, // Default Real PKR balance: PKR 25,000
-                        demoBalance = 25000.0,
-                        rewardPoints = 4850,
+                        vipLevel = 1,
+                        pkrBalance = 0.0, // Real PKR Wallet Balance starts at PKR 0.00
+                        demoBalance = 5000.0, // Initial DEMO balance: PKR 5,000 (DEMO BALANCE — NOT REAL MONEY)
+                        rewardPoints = 500,
                         role = "PLAYER"
                     )
                 )
-            } else if (existingUser.pkrBalance <= 0.0) {
-                db.userDao().setPkrBalance("p6692_user_1", 25000.0)
             }
 
             // 2. Seed / Upsert all canonical games (Car Racing, Ludo, Subway Runner, Piano Tiles, Fortune Gems 2, etc.)
@@ -125,39 +126,21 @@ abstract class AppDatabase : RoomDatabase() {
 
             // 3. Seed Daily Rewards if empty
             val dailyRewards = listOf(
-                DailyRewardEntity(1, "Day 1 Welcome", 1000.0, 100, isClaimed = true),
-                DailyRewardEntity(2, "Day 2 Boost", 1500.0, 150, isClaimed = true),
-                DailyRewardEntity(3, "Day 3 Super Charge", 2500.0, 250, isClaimed = false, isCurrentDay = true),
-                DailyRewardEntity(4, "Day 4 Plasma Key", 3500.0, 350, isClaimed = false),
-                DailyRewardEntity(5, "Day 5 Matrix Vault", 5000.0, 500, isClaimed = false),
-                DailyRewardEntity(6, "Day 6 Cyber Core", 7500.0, 750, isClaimed = false),
-                DailyRewardEntity(7, "Day 7 Grand Jackpot Box", 15000.0, 1500, isClaimed = false)
+                DailyRewardEntity(1, "Day 1 Welcome", 100.0, 50, isClaimed = true),
+                DailyRewardEntity(2, "Day 2 Boost", 150.0, 75, isClaimed = true),
+                DailyRewardEntity(3, "Day 3 Super Charge", 250.0, 100, isClaimed = false, isCurrentDay = true),
+                DailyRewardEntity(4, "Day 4 Plasma Key", 350.0, 150, isClaimed = false),
+                DailyRewardEntity(5, "Day 5 Matrix Vault", 500.0, 200, isClaimed = false),
+                DailyRewardEntity(6, "Day 6 Cyber Core", 750.0, 300, isClaimed = false),
+                DailyRewardEntity(7, "Day 7 Grand Jackpot Box", 1500.0, 500, isClaimed = false)
             )
             db.dailyRewardDao().insertRewards(dailyRewards)
 
-            // 4. Seed Initial Wallet Ledger Transactions
-            val existingTxns = db.transactionDao().getTransactions("p6692_user_1")
-            // Insert seed welcome deposit record if none exists
-            db.transactionDao().insertTransaction(
-                TransactionEntity(
-                    userId = "p6692_user_1",
-                    transactionId = "TXN-DEP-WELCOME-2026",
-                    type = "DEPOSIT",
-                    amountPkr = 25000.0,
-                    previousBalance = 0.0,
-                    newBalance = 25000.0,
-                    status = "SUCCESSFUL",
-                    paymentProvider = "JAZZCASH",
-                    providerTxnId = "JC998241029",
-                    description = "Welcome Account Credit via JazzCash Gateway"
-                )
-            )
-
-            // 5. Seed Initial Notifications
+            // 4. Seed Initial Notifications
             val notifs = listOf(
                 NotificationEntity(
-                    title = "⚡ Welcome to P6692 Real PKR Gaming",
-                    message = "Your account is active with PKR 25,000 initial balance. Place real PKR bets on Cyber Crash, Neon Slots, and Cyber Mines!",
+                    title = "⚡ Welcome to P6692 Gaming",
+                    message = "Your account is active. Start with PKR 5,000 DEMO practice credits or deposit real PKR via official JazzCash gateway!",
                     category = "SYSTEM"
                 ),
                 NotificationEntity(
@@ -170,7 +153,7 @@ abstract class AppDatabase : RoomDatabase() {
                 db.notificationDao().insertNotification(n)
             }
 
-            // 6. Seed JazzCash Business Configuration
+            // 5. Seed JazzCash Business Configuration
             db.jazzCashConfigDao().saveConfig(
                 JazzCashConfigEntity(
                     id = "primary_config",
@@ -178,7 +161,25 @@ abstract class AppDatabase : RoomDatabase() {
                     accountNumber = "01104590863",
                     merchantId = "MC895945",
                     apiPassword = "z84t9fx8c8",
-                    integritySalt = "498z5u0th4"
+                    integritySalt = "498z5u0th4",
+                    returnUrl = "https://api.p6692.com/api/jazzcash/callback",
+                    environment = "PRODUCTION"
+                )
+            )
+
+            // 6. Seed CryptoEze Gateway Configuration (routing to JazzCash)
+            db.cryptoEzeConfigDao().saveConfig(
+                CryptoEzeConfigEntity(
+                    id = "primary_cryptoeze",
+                    merchantId = "merch_8bbc74b534e28efb54a3de42",
+                    apiKey = "pk_live_1bbea1f4b9cab098a5189af471d580e9",
+                    secretKey = "sk_live_3860",
+                    webhookSecret = "whsec_4a6112",
+                    webhookUrl = "https://p6692.com/webhooks/cryptoeze",
+                    environment = "LIVE",
+                    defaultChannel = "JAZZCASH",
+                    settlementAccount = "03001234567",
+                    apiUrl = "https://api.cryptoeze.com/api/v1"
                 )
             )
         }
