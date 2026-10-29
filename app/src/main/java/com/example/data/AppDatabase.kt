@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
         JazzCashConfigEntity::class,
         CryptoEzeConfigEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -179,7 +179,7 @@ abstract class AppDatabase : RoomDatabase() {
                     environment = "LIVE",
                     defaultChannel = "JAZZCASH",
                     settlementAccount = "03001234567",
-                    apiUrl = "https://api.cryptoeze.com/api/v1"
+                    apiUrl = "https://cryptoeze.com/api/v1"
                 )
             )
         }

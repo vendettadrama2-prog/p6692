@@ -22,6 +22,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.DepositEntity
@@ -57,6 +60,7 @@ fun DepositScreen(
     onSaveCryptoEzeConfig: ((CryptoEzeConfigEntity) -> Unit)? = null,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val jcConfig = jazzCashConfig ?: JazzCashConfigEntity(environment = "SANDBOX")
     val ceConfig = cryptoEzeConfig ?: CryptoEzeConfigEntity(environment = "SANDBOX")
@@ -144,11 +148,12 @@ fun DepositScreen(
 
             verificationStep = "1. Generating HMAC-SHA256 signature for CryptoEze (${ceConfig.merchantId})..."
             delay(200)
-            verificationStep = "2. Transmitting invoice to CryptoEze Unified Switch (${ceConfig.apiUrl}/invoices)..."
+            verificationStep = "2. Transmitting payment to CryptoEze Switch (https://cryptoeze.com/api/v1/pkr)..."
 
             val result = CryptoEzeClient.createInvoice(
                 merchantId = ceConfig.merchantId,
                 apiKey = ceConfig.apiKey,
+                secretKey = ceConfig.secretKey,
                 webhookSecret = ceConfig.webhookSecret,
                 amountPkr = currentPayableAmount,
                 mobileNumber = userMobileNumber,
@@ -162,7 +167,26 @@ fun DepositScreen(
             verificationStep = "3. Response: HTTP ${result.httpStatusCode} | Status: ${result.status} (${result.responseMessage})"
             delay(300)
 
-            if (result.isApproved) {
+            if (result.isApproved && result.paymentUrl.isNotBlank() && result.paymentUrl.startsWith("http")) {
+                val invoiceId = result.invoiceId.ifBlank { "CE" + System.currentTimeMillis().toString().takeLast(8) }
+                gatewayTxnId = invoiceId
+                verificationStep = "4. Hosted Checkout created! Opening official CryptoEze JazzCash payment..."
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(result.paymentUrl))
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                } catch (_: Exception) {}
+
+                onCompletePayment(
+                    activeOrderId,
+                    "CRYPTOEZE_JAZZCASH",
+                    currentPayableAmount,
+                    invoiceId,
+                    true,
+                    "Official CryptoEze Checkout Launched: Complete prompt on mobile to finish payment"
+                )
+                gatewayStatus = PaymentGatewayStatus.SUCCESSFUL
+            } else if (result.isApproved) {
                 val invoiceId = result.invoiceId.ifBlank { "CE" + System.currentTimeMillis().toString().takeLast(8) }
                 gatewayTxnId = invoiceId
                 verificationStep = "4. Verified with CryptoEze gateway! Crediting PKR wallet balance..."
@@ -177,14 +201,6 @@ fun DepositScreen(
                 gatewayStatus = PaymentGatewayStatus.SUCCESSFUL
             } else {
                 failureReasonText = result.responseMessage
-                onCompletePayment(
-                    activeOrderId,
-                    "CRYPTOEZE_JAZZCASH",
-                    currentPayableAmount,
-                    "",
-                    false,
-                    failureReasonText
-                )
                 gatewayStatus = PaymentGatewayStatus.FAILED
             }
         }
@@ -293,8 +309,8 @@ fun DepositScreen(
                     Column {
                         Text("PKR Deposit", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         Text(
-                            text = if (selectedGateway == "CRYPTOEZE") "CryptoEze Unified Gateway (JazzCash)" else "JazzCash Official Direct Switch",
-                            color = if (selectedGateway == "CRYPTOEZE") AccentCyan else CoralRed,
+                            text = "CryptoEze Gateway (JazzCash Settlement)",
+                            color = AccentCyan,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -327,95 +343,62 @@ fun DepositScreen(
 
                     IconButton(
                         onClick = {
-                            if (selectedGateway == "CRYPTOEZE") {
-                                showCryptoEzeConfigModal = true
-                            } else {
-                                showConfigModal = true
-                            }
+                            showCryptoEzeConfigModal = true
                         },
                         modifier = Modifier.size(36.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Settings, contentDescription = "Gateway Config", tint = AccentCyan)
+                        Icon(imageVector = Icons.Default.Settings, contentDescription = "CryptoEze Config", tint = AccentCyan)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Gateway Selector: CryptoEze (JazzCash Direct) vs JazzCash Direct Switch
-            Row(
+            // Single Unified CryptoEze (JazzCash) Active Banner
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                color = PrimaryPurple.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.5f))
             ) {
-                listOf(
-                    "CRYPTOEZE" to "⚡ CryptoEze (JazzCash)",
-                    "JAZZCASH_DIRECT" to "💳 JazzCash Direct"
-                ).forEach { (gwId, label) ->
-                    val isSel = selectedGateway == gwId
-                    Surface(
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable {
-                                selectedGateway = gwId
-                                gatewayStatus = PaymentGatewayStatus.IDLE
-                            },
-                        color = if (isSel) PrimaryPurple else CardBg,
-                        shape = RoundedCornerShape(10.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.2.dp, if (isSel) AccentCyan else CardBorder)
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(AccentCyan.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 7.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = label,
-                                color = if (isSel) Color.White else TextSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
+                        Text("⚡", fontSize = 16.sp)
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Navigation Tabs (Checkout / History)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(
-                    if (selectedGateway == "CRYPTOEZE") "⚡ CryptoEze Checkout" else "🛍️ JazzCash Deposit",
-                    "📜 Deposit History (${userDeposits.size})"
-                ).forEachIndexed { index, title ->
-                    val isSel = currentTab == index
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "CryptoEze Payment Gateway",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            text = "Direct JazzCash Mobile Settlement • Instant Balance Credit",
+                            color = TextMuted,
+                            fontSize = 11.sp
+                        )
+                    }
                     Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable {
-                                currentTab = index
-                                if (gatewayStatus == PaymentGatewayStatus.SUCCESSFUL ||
-                                    gatewayStatus == PaymentGatewayStatus.FAILED ||
-                                    gatewayStatus == PaymentGatewayStatus.CANCELLED) {
-                                    gatewayStatus = PaymentGatewayStatus.IDLE
-                                }
-                            },
-                        color = if (isSel) PrimaryPurple else CardBg,
-                        shape = RoundedCornerShape(10.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSel) BrightPurple else CardBorder)
+                        color = NeonGreen.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(6.dp),
+                        border = androidx.compose.foundation.BorderStroke(0.8.dp, NeonGreen)
                     ) {
                         Text(
-                            text = title,
-                            color = if (isSel) Color.White else TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 10.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            text = "LIVE",
+                            color = NeonGreen,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 10.sp,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                         )
                     }
                 }
@@ -694,56 +677,94 @@ fun DepositScreen(
                                     }
 
                                     Surface(
-                                        color = GoldYellow.copy(alpha = 0.12f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = androidx.compose.foundation.BorderStroke(0.8.dp, GoldYellow.copy(alpha = 0.4f)),
+                                        color = PrimaryPurple.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, if (lastCryptoEzeResult?.status == "AUTH_REQUIRED") BrightPurple else GoldYellow.copy(alpha = 0.4f)),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text(
-                                            text = if (selectedGateway == "CRYPTOEZE") 
-                                                "ℹ️ Real request was transmitted to CryptoEze with HMAC-SHA256 signature. If using test mode or your keys are pending activation, tap 'Test Approve in Sandbox' below to credit funds immediately, or tap 'Edit CryptoEze Credentials' to configure."
-                                            else 
-                                                "ℹ️ Real request was sent to JazzCash Sandbox API. If your merchant ID is not yet activated on JazzCash's sandbox, you can tap 'Test Approve in Sandbox' below to credit test funds immediately, or configure your credentials.",
-                                            color = GoldYellow,
-                                            fontSize = 10.sp,
-                                            modifier = Modifier.padding(8.dp)
-                                        )
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                Text("⚠️", fontSize = 14.sp)
+                                                Text(
+                                                    text = if (lastCryptoEzeResult?.status == "AUTH_REQUIRED") 
+                                                        "Real Account Deduction Requires Complete Secret Key"
+                                                    else 
+                                                        "CryptoEze Gateway Response",
+                                                    color = AccentCyan,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                            Text(
+                                                text = if (lastCryptoEzeResult?.status == "AUTH_REQUIRED")
+                                                    "Aapke JazzCash account se paise tabhi katenge jab CryptoEze ki Poori 32+ character Secret Key enter hogi. Jo key enter hai ('sk_live_3860…') wo aadhi thi, is liye CryptoEze ne real payment reject ki."
+                                                else
+                                                    "CryptoEze switch did not return an approved checkout URL. Verify your internet connection and merchant keys.",
+                                                color = Color.White,
+                                                fontSize = 11.sp,
+                                                lineHeight = 15.sp
+                                            )
+                                        }
                                     }
 
-                                    // Action 1: Test Approve in Sandbox (Mock Override)
-                                    Button(
-                                        onClick = {
-                                            if (selectedGateway == "CRYPTOEZE") {
-                                                authorizeCryptoEzePayment(forceSandboxApprove = true)
-                                            } else {
-                                                authorizeGatewayPayment(forceSandboxApprove = true)
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = DarkBg, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("TEST APPROVE IN SANDBOX (PKR ${String.format("%,.0f", currentPayableAmount)})", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 11.sp)
-                                    }
+                                    // Action 1: If Auth Required, Paste Key; else Sandbox Approve
+                                    if (lastCryptoEzeResult?.status == "AUTH_REQUIRED") {
+                                        Button(
+                                            onClick = { showCryptoEzeConfigModal = true },
+                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("PASTE COMPLETE SECRET KEY (sk_live_...)", color = Color.White, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                                        }
 
-                                    // Action 2: Configure Credentials
-                                    OutlinedButton(
-                                        onClick = {
-                                            if (selectedGateway == "CRYPTOEZE") {
-                                                showCryptoEzeConfigModal = true
-                                            } else {
-                                                showConfigModal = true
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(10.dp),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Settings, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(if (selectedGateway == "CRYPTOEZE") "EDIT CRYPTOEZE CREDENTIALS" else "EDIT JAZZCASH CREDENTIALS", color = AccentCyan, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                        OutlinedButton(
+                                            onClick = { authorizeCryptoEzePayment(forceSandboxApprove = true) },
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = NeonGreen),
+                                            shape = RoundedCornerShape(10.dp),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, NeonGreen),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = NeonGreen, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("CREDIT TEST PKR (DEMO MODE)", color = NeonGreen, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                        }
+                                    } else {
+                                        Button(
+                                            onClick = {
+                                                if (selectedGateway == "CRYPTOEZE") {
+                                                    authorizeCryptoEzePayment(forceSandboxApprove = true)
+                                                } else {
+                                                    authorizeGatewayPayment(forceSandboxApprove = true)
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = DarkBg, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("TEST APPROVE IN SANDBOX (PKR ${String.format("%,.0f", currentPayableAmount)})", color = DarkBg, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                if (selectedGateway == "CRYPTOEZE") {
+                                                    showCryptoEzeConfigModal = true
+                                                } else {
+                                                    showConfigModal = true
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(10.dp),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Settings, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(if (selectedGateway == "CRYPTOEZE") "EDIT CRYPTOEZE CREDENTIALS" else "EDIT JAZZCASH CREDENTIALS", color = AccentCyan, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                        }
                                     }
 
                                     // Action 3: Retry Real API Call
@@ -1201,10 +1222,40 @@ fun DepositScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Official JazzCash Merchant Switch Verification (HMAC-SHA256)",
+                                        text = "CryptoEze 256-Bit SSL Switch • Instant JazzCash Credit",
                                         color = TextMuted,
                                         fontSize = 11.sp
                                     )
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                // Optional Deposit History Toggle
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .clickable { currentTab = 1 },
+                                    color = SecondaryBg,
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Text("📜", fontSize = 14.sp)
+                                            Text("View Past Deposits (${userDeposits.size})", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowForward,
+                                            contentDescription = null,
+                                            tint = AccentCyan,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1214,11 +1265,35 @@ fun DepositScreen(
 
             // TAB 1: User Deposit History
             if (currentTab == 1) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 30.dp)
-                ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Deposit History (${userDeposits.size})",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                        OutlinedButton(
+                            onClick = { currentTab = 0 },
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Text("← Back to Deposit", color = AccentCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 30.dp)
+                    ) {
                     if (userDeposits.isEmpty()) {
                         item {
                             Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
@@ -1329,6 +1404,7 @@ fun DepositScreen(
             }
         }
     }
+}
 
     // Step 4 — Official Payment Gateway Checkout Portal
     if (gatewayStatus == PaymentGatewayStatus.GATEWAY_CHECKOUT_OPEN) {
@@ -1452,7 +1528,7 @@ fun DepositScreen(
                             }
                             Text(
                                 text = if (selectedGateway == "CRYPTOEZE")
-                                    "Invoice request will be created at ${ceConfig.apiUrl}/invoices signed with HMAC-SHA256 signature for JazzCash mobile wallet."
+                                    "Official payment request will be sent to https://cryptoeze.com/api/v1/pkr to generate your hosted JazzCash checkout page."
                                 else
                                     "A real HTTP POST will be transmitted to ${if (jcConfig.environment == "PRODUCTION") JazzCashClient.PRODUCTION_DO_TRANSACTION_URL else JazzCashClient.SANDBOX_DO_TRANSACTION_URL} with HMAC-SHA256 signature.",
                                 color = TextSecondary,
@@ -1477,11 +1553,11 @@ fun DepositScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = if (selectedGateway == "CRYPTOEZE")
-                                "TRANSMIT TO CRYPTOEZE GATEWAY (PKR ${String.format("%,.0f", currentPayableAmount)})"
+                                "PAY VIA CRYPTOEZE (PKR ${String.format("%,.0f", currentPayableAmount)})"
                             else
                                 "TRANSMIT REAL JAZZCASH HTTP POST (PKR ${String.format("%,.0f", currentPayableAmount)})",
                             color = Color.White,

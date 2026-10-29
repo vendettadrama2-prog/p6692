@@ -164,7 +164,7 @@ data class CryptoEzeConfigEntity(
     val environment: String = "LIVE", // "SANDBOX" or "LIVE"
     val defaultChannel: String = "JAZZCASH", // "JAZZCASH", "EASYPAISA", "USDT"
     val settlementAccount: String = "03001234567",
-    val apiUrl: String = "https://api.cryptoeze.com/api/v1",
+    val apiUrl: String = "https://cryptoeze.com/api/v1",
     val updatedAt: Long = System.currentTimeMillis()
 )
 

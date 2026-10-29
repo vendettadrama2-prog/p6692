@@ -18,10 +18,7 @@ class CryptoEzeHelper {
     this.environment = config.environment || process.env.CRYPTOEZE_ENVIRONMENT || 'LIVE';
     this.webhookUrl = config.webhookUrl || process.env.CRYPTOEZE_WEBHOOK_URL || 'https://p6692.com/webhooks/cryptoeze';
     
-    this.apiUrl = config.apiUrl || process.env.CRYPTOEZE_API_URL || 
-      (this.environment === 'LIVE' 
-        ? 'https://api.cryptoeze.com/api/v1' 
-        : 'https://sandbox-api.cryptoeze.com/api/v1');
+    this.apiUrl = config.apiUrl || process.env.CRYPTOEZE_API_URL || 'https://cryptoeze.com/api/v1';
 
     this.settlementChannel = config.settlementChannel || 'JAZZCASH';
     this.settlementAccount = config.settlementAccount || '03001234567';
